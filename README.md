@@ -32,25 +32,25 @@ Enquanto ERPs convencionais registram o custo de aquisição, o StockWise agrega
 
 ## Funcionalidades Previstas
 
-**Integração com dados do ERP**
+**Integração com dados do ERP:**
 Importação de dados operacionais do ERP já utilizado pela empresa.
 
-**Modelo de custo gerencial composto**
+**Modelo de custo gerencial composto:**
 Cálculo de um indicador único por produto, integrando custo de aquisição, custo de armazenagem, tempo de permanência em estoque e custo de oportunidade do capital investido.
 
-**Indicadores de giro em janelas temporais**
+**Indicadores de giro em janelas temporais:**
 Análise do giro de estoque considerando diferentes períodos (30, 60, 90 e 180 dias), permitindo uma visão dinâmica do desempenho dos produtos ao longo do tempo.
 
-**Classificação multidimensional de produtos**
+**Classificação multidimensional de produtos:**
 Ranqueamento que combina simultaneamente as dimensões de giro, custo gerencial e nível de estoque, organizando os produtos por grau de prioridade para intervenção gerencial.
 
-**Estratégias promocionais com limite de desconto**
+**Estratégias promocionais com limite de desconto:**
 A partir do custo gerencial calculado, o sistema determina o valor máximo de desconto aplicável a cada produto, transformando a identificação de itens parados em uma recomendação promocional economicamente segura.
 
-**Dashboards analíticos interativos**
+**Dashboards analíticos interativos:**
 Interface web com painéis para visualização dos indicadores de resultado, permitindo que os gestores acompanhem o desempenho do estoque de forma clara e orientada à decisão.
 
-**Modelagem analítica e aprendizado de máquina**
+**Modelagem analítica e aprendizado de máquina:**
 Aplicação de técnicas de análise exploratória e modelos de machine learning (scikit-learn) sobre os dados históricos do ERP, com o objetivo de identificar padrões de desempenho que possam reforçar ou refinar as recomendações geradas pelo sistema.
 
 ---
