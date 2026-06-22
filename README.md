@@ -97,9 +97,9 @@ O sistema será organizado em três camadas principais:
 - Bibliotecas de visualização de dados (Recharts / Chart.js)
 
 **Infraestrutura e Qualidade**
-- GitHub Actions (CI/CD)
+- GitHub (CI/CD)
 - SonarCloud (análise estática)
-- Grafana / Prometheus (monitoramento)
+- Prometheus (monitoramento)
 - Deploy em nuvem (AWS / GCP / Azure)
 - Cobertura de testes: >= 75% backend, >= 25% frontend
 
