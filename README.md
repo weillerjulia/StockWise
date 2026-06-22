@@ -2,7 +2,7 @@
 
 **Sistema de Apoio à Decisão para Definição de Estratégias Promocionais Baseado no Custo Gerencial de Estoque em Autopeças**
 
-> Status: Projeto em fase de planejamento e preparação para desenvolvimento.
+> Status: Projeto em fase de preparação para iniciar o desenvolvimento.
 
 ---
 
