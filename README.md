@@ -100,7 +100,7 @@ O sistema será organizado em três camadas principais:
 - GitHub (CI/CD)
 - SonarCloud (análise estática)
 - Prometheus (monitoramento)
-- Deploy em nuvem (AWS / GCP / Azure)
+- Deploy em nuvem (AWS / Azure)
 - Cobertura de testes: >= 75% backend, >= 25% frontend
 
 ---
