@@ -105,6 +105,40 @@ O sistema será organizado em três camadas principais:
 
 ---
 
+## Como Rodar o Projeto
+
+### Backend (FastAPI)
+
+```bash
+cd backend
+python -m venv .venv
+.venv\Scripts\activate   # Windows
+pip install -r requirements.txt
+cp .env.example .env     
+uvicorn app.main:app --reload
+```
+
+Healthcheck em `http://localhost:8000/health`. Testes: `pytest` (dentro de `backend/`).
+
+### Banco de dados (Supabase)
+
+Rode o script `backend/db/schema.sql` no SQL Editor do seu projeto Supabase
+para criar as tabelas (`produtos`, `importacoes`, `estoque_snapshots`,
+`resultados_analise`).
+
+### Frontend (React + Vite)
+
+```bash
+cd frontend
+npm install
+cp .env.example .env     
+npm run dev
+```
+
+Acesse `http://localhost:5173`. Testes: `npm run test` (Vitest).
+
+---
+
 ## Autora
 
 **Julia Weiller**
