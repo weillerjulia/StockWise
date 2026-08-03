@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     supabase_url: str = ""
     supabase_key: str = ""
     environment: str = "development"
+    frontend_origin: str = "http://localhost:5173"
 
 
 @lru_cache

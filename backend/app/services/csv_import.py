@@ -6,8 +6,6 @@ from dataclasses import dataclass, field
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 
-DELIMITADOR = ";"
-
 COLUNAS_OBRIGATORIAS = (
     "codigo_produto",
     "nome_produto",
@@ -50,19 +48,33 @@ class ResultadoProcessamento:
 
 
 def _decodificar(conteudo: bytes) -> str:
-    for codificacao in ("utf-8-sig", "cp1252"):
+    # mac_roman é fallback final porque mapeia todos os 256 valores de byte
+    # (nunca levanta UnicodeDecodeError) — precisa vir depois do cp1252 pra
+    # não "roubar" arquivos que são cp1252 de verdade.
+    for codificacao in ("utf-8-sig", "cp1252", "mac_roman"):
         try:
             return conteudo.decode(codificacao)
         except UnicodeDecodeError:
             continue
-    raise ValueError("não foi possível decodificar o arquivo (esperado UTF-8 ou CP1252)")
+    raise ValueError("não foi possível decodificar o arquivo (esperado UTF-8, CP1252 ou Mac Roman)")
+
+
+def _detectar_delimitador(primeira_linha: str) -> str:
+    try:
+        return csv.Sniffer().sniff(primeira_linha, delimiters=";,\t").delimiter
+    except csv.Error:
+        return ";"
 
 
 def _parse_moeda(valor: str) -> Decimal:
     limpo = valor.strip().replace("R$", "").strip()
     if not limpo:
         raise ValueError("valor monetário vazio")
-    limpo = limpo.replace(".", "").replace(",", ".")
+    # Formato BR ("R$ 1.234,50"): vírgula é o decimal, ponto é separador de
+    # milhar. Sem vírgula, assume-se que o ponto (se houver) já é o decimal
+    # (formato exportado por planilhas em locale EUA/UK, ex.: "18.5").
+    if "," in limpo:
+        limpo = limpo.replace(".", "").replace(",", ".")
     return Decimal(limpo)
 
 
@@ -140,7 +152,9 @@ def _validar_linha(
 
 def processar_csv(conteudo: bytes) -> ResultadoProcessamento:
     texto = _decodificar(conteudo)
-    leitor = csv.DictReader(io.StringIO(texto), delimiter=DELIMITADOR)
+    primeira_linha = texto.splitlines()[0] if texto else ""
+    delimitador = _detectar_delimitador(primeira_linha)
+    leitor = csv.DictReader(io.StringIO(texto), delimiter=delimitador)
 
     resultado = ResultadoProcessamento()
     codigos_vistos: set[str] = set()

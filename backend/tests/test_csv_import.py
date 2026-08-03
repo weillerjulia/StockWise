@@ -76,6 +76,31 @@ def test_codigo_duplicado_no_arquivo_mantem_primeira_ocorrencia_e_gera_erro():
     assert resultado.erros[0].linha == 3
 
 
+def test_arquivo_com_delimitador_virgula_e_decimal_com_ponto_e_lido_corretamente():
+    cabecalho_virgula = CABECALHO.replace(";", ",")
+    linha_virgula = (
+        "AP-1001,Filtro de óleo motor 1.0/1.6,Motor,Filora Fortaleza Peças,02/10/2025,"
+        "28/07/2026,42,15,18.5,34.9,22,61,118,1.2,12"
+    )
+
+    resultado = processar_csv("\n".join([cabecalho_virgula, linha_virgula]).encode("utf-8"))
+
+    assert resultado.erros == []
+    linha = resultado.linhas_validas[0]
+    assert linha.codigo_produto == "AP-1001"
+    assert str(linha.custo_aquisicao_unitario) == "18.5"
+    assert str(linha.preco_venda_unitario) == "34.9"
+
+
+def test_arquivo_codificado_em_mac_roman_e_decodificado_corretamente():
+    conteudo = "\n".join([CABECALHO, LINHA_AP_1001]).encode("mac_roman")
+
+    resultado = processar_csv(conteudo)
+
+    assert resultado.erros == []
+    assert resultado.linhas_validas[0].nome_produto == "Filtro de óleo motor 1.0/1.6"
+
+
 def test_campos_opcionais_ausentes_recebem_valores_padrao():
     linha_minima = "AP-1006;Bomba de combustível elétrica;;;18/02/2025;;9;;R$ 185,00;;;;;;"
 

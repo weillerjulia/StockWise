@@ -8,6 +8,7 @@ from app.services import importacoes_repository as repo
 from app.services.classificacao_estoque import ItemParaClassificar, classificar_lote
 from app.services.csv_import import processar_csv
 from app.services.custo_gerencial import calcular_custo_gerencial
+from app.services.desconto_maximo import calcular_desconto_maximo
 from app.services.giro_estoque import calcular_giro
 
 router = APIRouter(prefix="/importacoes", tags=["importacoes"])
@@ -63,10 +64,14 @@ async def importar_csv(arquivo: UploadFile = File(...)) -> dict[str, object]:
         for (linha, resultado_custo, resultado_giro), resultado_classificacao in zip(
             processados, classificacoes
         ):
+            resultado_desconto = calcular_desconto_maximo(
+                custo_gerencial_composto=resultado_custo.custo_gerencial_composto,
+                preco_venda_unitario=linha.preco_venda_unitario,
+            )
             produto_id = repo.upsert_produto(linha)
             snapshot_id = repo.inserir_snapshot(importacao_id, produto_id, linha)
             repo.inserir_resultado_analise(
-                snapshot_id, resultado_custo, resultado_giro, resultado_classificacao
+                snapshot_id, resultado_custo, resultado_giro, resultado_classificacao, resultado_desconto
             )
     except Exception as exc:
         repo.marcar_importacao_falhou(importacao_id, str(exc))

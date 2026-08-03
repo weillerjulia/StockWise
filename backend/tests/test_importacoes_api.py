@@ -24,10 +24,12 @@ def _upload(monkeypatch, conteudo: str, *, resultados_gravados: list | None = No
     monkeypatch.setattr(importacoes_module.repo, "inserir_snapshot", lambda *a, **k: "snapshot-1")
     monkeypatch.setattr(importacoes_module.repo, "finalizar_importacao", lambda *a, **k: None)
 
-    def _capturar_resultado(snapshot_id, resultado_custo, resultado_giro, resultado_classificacao):
+    def _capturar_resultado(
+        snapshot_id, resultado_custo, resultado_giro, resultado_classificacao, resultado_desconto
+    ):
         if resultados_gravados is not None:
             resultados_gravados.append(
-                (snapshot_id, resultado_custo, resultado_giro, resultado_classificacao)
+                (snapshot_id, resultado_custo, resultado_giro, resultado_classificacao, resultado_desconto)
             )
 
     monkeypatch.setattr(importacoes_module.repo, "inserir_resultado_analise", _capturar_resultado)
@@ -70,7 +72,9 @@ def test_importar_csv_totalmente_valido_retorna_status_concluida(monkeypatch):
     assert corpo["linhas_com_erro"] == 0
 
     assert len(resultados_gravados) == 1
-    snapshot_id, resultado_custo, resultado_giro, resultado_classificacao = resultados_gravados[0]
+    snapshot_id, resultado_custo, resultado_giro, resultado_classificacao, resultado_desconto = (
+        resultados_gravados[0]
+    )
     assert snapshot_id == "snapshot-1"
     assert resultado_custo.custo_gerencial_composto > 0
     assert resultado_giro.giro_30d is not None
@@ -79,6 +83,7 @@ def test_importar_csv_totalmente_valido_retorna_status_concluida(monkeypatch):
         "Prioridade Média",
         "Prioridade Baixa",
     )
+    assert resultado_desconto.desconto_maximo_valor is not None
 
 
 def test_classificacao_e_relativa_ao_lote_da_importacao(monkeypatch):
@@ -99,8 +104,8 @@ def test_classificacao_e_relativa_ao_lote_da_importacao(monkeypatch):
     assert resposta.status_code == 200
     assert len(resultados_gravados) == 2
 
-    _, _, _, classificacao_caro_parado = resultados_gravados[0]
-    _, _, _, classificacao_barato_rapido = resultados_gravados[1]
+    _, _, _, classificacao_caro_parado, _ = resultados_gravados[0]
+    _, _, _, classificacao_barato_rapido, _ = resultados_gravados[1]
 
     assert classificacao_caro_parado.classificacao == "Prioridade Alta"
     assert classificacao_barato_rapido.classificacao == "Prioridade Baixa"
@@ -112,7 +117,7 @@ def test_get_resultados_retorna_dados_do_repositorio(monkeypatch):
         {
             "id": "snapshot-1",
             "produtos": {"codigo_produto": "AP-1001"},
-            "resultados_analise": [{"custo_gerencial_composto": "22.58"}],
+            "resultados_analise": {"custo_gerencial_composto": "22.58"},
         }
     ]
     monkeypatch.setattr(

@@ -6,6 +6,7 @@ from app.db.supabase_client import get_supabase_client
 from app.services.classificacao_estoque import ResultadoClassificacao
 from app.services.csv_import import LinhaImportada
 from app.services.custo_gerencial import ResultadoCustoGerencial
+from app.services.desconto_maximo import ResultadoDesconto
 from app.services.giro_estoque import ResultadoGiro
 
 
@@ -73,6 +74,7 @@ def inserir_resultado_analise(
     resultado_custo: ResultadoCustoGerencial,
     resultado_giro: ResultadoGiro,
     resultado_classificacao: ResultadoClassificacao,
+    resultado_desconto: ResultadoDesconto,
 ) -> None:
     cliente = get_supabase_client()
     cliente.table("resultados_analise").insert(
@@ -89,6 +91,16 @@ def inserir_resultado_analise(
             ),
             "classificacao": resultado_classificacao.classificacao,
             "score_prioridade": str(resultado_classificacao.score_prioridade),
+            "desconto_maximo_percentual": (
+                str(resultado_desconto.desconto_maximo_percentual)
+                if resultado_desconto.desconto_maximo_percentual is not None
+                else None
+            ),
+            "desconto_maximo_valor": (
+                str(resultado_desconto.desconto_maximo_valor)
+                if resultado_desconto.desconto_maximo_valor is not None
+                else None
+            ),
         }
     ).execute()
 
