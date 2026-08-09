@@ -3,12 +3,9 @@ import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxi
 
 import type { Classificacao, ResultadoAnalise } from "../api/types";
 import { useResultadosUltimaImportacao } from "../hooks/useResultadosUltimaImportacao";
+import { formatarMoeda } from "../utils/format";
 
 const ORDEM_CLASSIFICACAO: Classificacao[] = ["Prioridade Alta", "Prioridade Média", "Prioridade Baixa"];
-
-function formatarMoeda(valor: number): string {
-  return valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-}
 
 export default function DashboardPage() {
   const estado = useResultadosUltimaImportacao();

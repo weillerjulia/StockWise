@@ -1,0 +1,160 @@
+# RFC — StockWise
+
+## 1. Contexto e problema
+
+Empresas do setor de autopeças usam ERPs que registram entradas, saídas e
+quantidades em estoque, mas não respondem perguntas gerenciais como "qual o
+custo real de manter este produto parado há 8 meses?" ou "qual o desconto
+máximo que posso aplicar numa promoção sem prejuízo?".
+
+O StockWise é uma camada analítica complementar a esse ERP: consome um
+snapshot do estoque (hoje via upload manual de CSV) e calcula um **custo
+gerencial composto** por produto — custo de aquisição + custo de armazenagem
+acumulado + custo de oportunidade do capital imobilizado, proporcionais ao
+tempo em estoque — e, a partir dele, um desconto máximo seguro por produto.
+
+Este documento descreve a arquitetura e as decisões técnicas do PoC
+implementado até o momento (módulos 1–6 + análise exploratória).
+
+## 2. Arquitetura
+
+Três camadas, sem acesso direto do frontend ao banco:
+
+```
+CSV (upload manual)  →  Backend (FastAPI)  →  Supabase (Postgres)
+                              ↑
+                         Frontend (React)
+```
+
+- O frontend nunca fala com o Supabase diretamente — só com a API FastAPI.
+- O backend é o único componente com a service key do Supabase.
+- Isso mantém a separação entre camada de apresentação e camada de
+  processamento, e evita expor credenciais de banco no navegador.
+
+## 3. Stack tecnológica (implementada)
+
+**Backend** (`backend/requirements.txt`): FastAPI, Uvicorn, pydantic-settings,
+supabase-py, python-multipart (upload de arquivo), pandas, pytest, httpx
+(`TestClient`).
+
+**Frontend** (`frontend/package.json`): React 19, React Router, Recharts
+(gráfico do dashboard), Vite, Vitest + Testing Library.
+
+**Banco**: Supabase (Postgres gerenciado), schema em `backend/db/schema.sql`.
+
+**Análise exploratória** (`backend/analysis/requirements.txt`, isolado do
+runtime da API): scikit-learn, matplotlib, python-dotenv, Jupyter.
+
+## 4. Fluxo de dados ponta a ponta
+
+1. Usuário faz upload do CSV na tela de Upload (`POST /importacoes`).
+2. Backend decodifica o arquivo, detecta delimitador e formato numérico,
+   valida linha a linha (`csv_import.py`).
+3. Para cada linha válida, calcula em sequência: custo gerencial composto
+   (`custo_gerencial.py`) → giro de estoque em 3 janelas (`giro_estoque.py`)
+   → classificação relativa ao lote (`classificacao_estoque.py`) → desconto
+   máximo sugerido (`desconto_maximo.py`).
+4. Grava produto (upsert), snapshot do estoque e resultado calculado no
+   Supabase (`importacoes_repository.py`), mantendo os 3 tipos de dado em
+   tabelas separadas (ver seção 5).
+5. Frontend guarda o `id` da importação no `localStorage` e consulta
+   `GET /importacoes/{id}/resultados` para alimentar as telas de Dashboard e
+   Produtos.
+
+## 5. Decisões técnicas relevantes
+
+### 5.1 CSV manual em vez de integração direta com o ERP
+
+Não há integração via API/banco direto com o ERP nesta fase. Trade-off
+aceito conscientemente: simplifica o PoC (não depende de credenciais ou
+protocolo de um ERP específico) às custas de exigir uma ação manual do
+usuário a cada atualização de dados.
+
+### 5.2 Separação em 4 tabelas: dado bruto vs. dado calculado
+
+`produtos` (dimensão descritiva), `estoque_snapshots` (o que veio
+literalmente do CSV em cada upload) e `resultados_analise` (o que é
+calculado pelo sistema) são tabelas distintas, não uma tabela larga única.
+Isso permite: (a) manter histórico entre importações para comparar giro/custo
+ao longo do tempo; (b) reprocessar os cálculos sem precisar reimportar o
+CSV. `importacoes` dá rastreabilidade de cada upload (linhas com erro,
+quando rodou).
+
+### 5.3 Decodificação de CSV com fallback em cadeia
+
+`csv_import._decodificar` tenta `utf-8-sig` → `cp1252` → `mac_roman`, nessa
+ordem. Motivado por um caso real: um CSV de teste veio codificado em Mac OS
+Roman (exportado por Excel de Mac), o que não é nem UTF-8 nem CP1252 —
+sem esse terceiro fallback, o upload falhava com erro de decodificação.
+`mac_roman` fica por último porque mapeia todos os 256 valores de byte
+(nunca levanta erro), então precisa vir depois do CP1252 pra não "roubar"
+arquivos que são CP1252 de verdade.
+
+### 5.4 Detecção automática de delimitador e de formato decimal
+
+`csv_import._detectar_delimitador` usa `csv.Sniffer` em vez de assumir `;`
+fixo — outro caso real: um segundo CSV de teste usava `,` como delimitador e
+`.` como separador decimal (sem `R$`), enquanto o primeiro usava `;` e
+`R$ 1.234,56`. `_parse_moeda` só aplica a conversão de formato BR
+(remover `.` de milhar, trocar `,` por `.`) quando encontra uma vírgula no
+valor — caso contrário assume que o ponto já é o decimal.
+
+### 5.5 CORS explícito via variável de ambiente
+
+`FRONTEND_ORIGIN` (`.env`, padrão `http://localhost:5173`) configura o
+`CORSMiddleware` do FastAPI. Necessário porque frontend e backend rodam em
+origens (portas) diferentes — sem isso, o navegador bloqueia as respostas da
+API e o upload falha com `Failed to fetch`.
+
+### 5.6 Margem mínima configurável no desconto máximo
+
+`calcular_desconto_maximo` (módulo 5) recebe `margem_minima_percentual`
+como parâmetro (padrão 10%) em vez de descontar até o ponto de custo exato
+(margem zero). Decisão de negócio: evitar que o desconto máximo sugerido
+zere a margem do produto mesmo na promoção mais agressiva.
+
+### 5.7 `localStorage` em vez de endpoint de listagem de importações
+
+A API não tem endpoint para listar importações ou obter "a mais recente"
+— o frontend guarda o `id` retornado pelo upload no `localStorage`
+(`stockwise:ultimaImportacaoId`) e o reutiliza nas telas de Dashboard e
+Produtos. Suficiente para o escopo do PoC (uso local, sem autenticação,
+um usuário por vez); não escala para múltiplos usuários/sessões.
+
+### 5.8 Filtro e ordenação client-side na tela de Produtos
+
+A tabela de produtos busca todos os resultados da importação de uma vez e
+aplica filtro (classificação) e ordenação (custo/giro) no navegador, sem
+paginação nem parâmetros de query no backend. Aceitável para o volume de
+dados de uma importação de PoC; seria revisado para lotes muito maiores.
+
+### 5.9 Clustering K-Means como notebook standalone
+
+O módulo de análise exploratória (`backend/analysis/clustering_kmeans.ipynb`)
+não está integrado à API nem ao pipeline de importação — é um notebook
+independente que lê os dados direto do Supabase usando as mesmas
+credenciais do backend. Decisão de escopo: nesta fase o objetivo é validar
+(reforçar ou refinar) a classificação por regras do módulo 4 com um método
+não supervisionado, não expor isso como funcionalidade do produto.
+
+## 6. Limitações conhecidas do PoC
+
+- Sem autenticação/autorização — qualquer pessoa com acesso à URL do
+  frontend pode importar dados e ver os resultados.
+- Sem integração direta com ERP — depende de exportação manual de CSV.
+- Supabase no plano gratuito pausa o projeto após período de inatividade,
+  o que derruba a conexão do backend até o projeto ser reativado
+  manualmente no painel.
+- Sem paginação — assume que uma importação cabe inteira na memória do
+  navegador.
+
+## 7. Testes
+
+- Backend: `pytest` (`backend/tests/`), cobrindo parsing de CSV
+  (encoding, delimitador, formato decimal, campos obrigatórios), cálculo de
+  custo gerencial, giro, classificação e desconto máximo, e a API de
+  importação de ponta a ponta.
+- Frontend: Vitest + Testing Library (`frontend/src/pages/*.test.tsx`),
+  cobrindo renderização da tela de Upload (resumo e erros por linha) e da
+  tela de Produtos (listagem e filtro por classificação).
+- Metas de cobertura definidas no README: ≥75% backend, ≥25% frontend.

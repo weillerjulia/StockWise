@@ -137,6 +137,28 @@ npm run dev
 
 Acesse `http://localhost:5173`. Testes: `npm run test` (Vitest).
 
+### Análise exploratória (K-Means)
+
+Notebook standalone em `backend/analysis/clustering_kmeans.ipynb` — agrupa os
+produtos já calculados (custo gerencial, giro, score de prioridade) via
+K-Means, pra comparar com a classificação por regras do módulo 4.
+
+```bash
+cd backend
+pip install -r analysis/requirements.txt
+jupyter notebook analysis/clustering_kmeans.ipynb
+```
+
+Lê as credenciais direto do `backend/.env` (mesmo arquivo usado pela API).
+
+---
+
+## Documentação
+
+- [`docs/RFC.md`](docs/RFC.md) — contexto, arquitetura e decisões técnicas.
+- [`docs/casos-de-uso.md`](docs/casos-de-uso.md) — casos de uso dos
+  principais fluxos do sistema.
+
 ---
 
 ## Autora

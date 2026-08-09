@@ -2,7 +2,9 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 import type { Classificacao } from "../api/types";
+import ClassificacaoBadge from "../components/ClassificacaoBadge";
 import { useResultadosUltimaImportacao } from "../hooks/useResultadosUltimaImportacao";
+import { formatarMoeda, formatarNumero } from "../utils/format";
 
 const OPCOES_CLASSIFICACAO: Classificacao[] = ["Prioridade Alta", "Prioridade Média", "Prioridade Baixa"];
 
@@ -14,6 +16,7 @@ interface LinhaProduto {
   giro_90d: number | null;
   classificacao: Classificacao;
   desconto_maximo_percentual: number | null;
+  desconto_maximo_valor: number | null;
 }
 
 type ChaveOrdenacao = "custo_gerencial_composto" | "giro_90d";
@@ -40,6 +43,7 @@ export default function ProdutosPage() {
           giro_90d: resultado.giro_90d,
           classificacao: resultado.classificacao,
           desconto_maximo_percentual: resultado.desconto_maximo_percentual,
+          desconto_maximo_valor: resultado.desconto_maximo_valor,
         };
       })
       .filter((linha): linha is LinhaProduto => linha != null);
@@ -66,6 +70,16 @@ export default function ProdutosPage() {
       if (atual?.chave !== chave) return { chave, direcao: "asc" };
       return { chave, direcao: atual.direcao === "asc" ? "desc" : "asc" };
     });
+  }
+
+  function indicadorOrdenacao(chave: ChaveOrdenacao): string {
+    if (ordenacao?.chave !== chave) return "";
+    return ordenacao.direcao === "asc" ? " ▲" : " ▼";
+  }
+
+  function ariaSort(chave: ChaveOrdenacao): "ascending" | "descending" | "none" {
+    if (ordenacao?.chave !== chave) return "none";
+    return ordenacao.direcao === "asc" ? "ascending" : "descending";
   }
 
   if (estado.status === "carregando") return <p>Carregando...</p>;
@@ -100,19 +114,23 @@ export default function ProdutosPage() {
         ))}
       </select>
 
+      <p>
+        {linhasFiltradas.length} produto{linhasFiltradas.length === 1 ? "" : "s"}
+      </p>
+
       <table>
         <thead>
           <tr>
             <th>Nome</th>
             <th>Categoria</th>
-            <th>
+            <th aria-sort={ariaSort("custo_gerencial_composto")}>
               <button type="button" onClick={() => alternarOrdenacao("custo_gerencial_composto")}>
-                Custo gerencial
+                Custo gerencial{indicadorOrdenacao("custo_gerencial_composto")}
               </button>
             </th>
-            <th>
+            <th aria-sort={ariaSort("giro_90d")}>
               <button type="button" onClick={() => alternarOrdenacao("giro_90d")}>
-                Giro (90d)
+                Giro (90d){indicadorOrdenacao("giro_90d")}
               </button>
             </th>
             <th>Classificação</th>
@@ -124,11 +142,15 @@ export default function ProdutosPage() {
             <tr key={linha.codigo_produto}>
               <td>{linha.nome_produto}</td>
               <td>{linha.categoria}</td>
-              <td>{linha.custo_gerencial_composto}</td>
-              <td>{linha.giro_90d ?? "-"}</td>
-              <td>{linha.classificacao}</td>
+              <td>{formatarMoeda(linha.custo_gerencial_composto)}</td>
+              <td>{linha.giro_90d != null ? formatarNumero(linha.giro_90d) : "-"}</td>
               <td>
-                {linha.desconto_maximo_percentual != null ? `${linha.desconto_maximo_percentual}%` : "-"}
+                <ClassificacaoBadge classificacao={linha.classificacao} />
+              </td>
+              <td>
+                {linha.desconto_maximo_percentual != null && linha.desconto_maximo_valor != null
+                  ? `${formatarNumero(linha.desconto_maximo_percentual)}% (${formatarMoeda(linha.desconto_maximo_valor)})`
+                  : "-"}
               </td>
             </tr>
           ))}
