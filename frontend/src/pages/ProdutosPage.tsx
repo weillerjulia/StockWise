@@ -1,18 +1,25 @@
+import { ChevronDown, ChevronUp, Download, Search } from "lucide-react";
+import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 import type { Classificacao } from "../api/types";
 import ClassificacaoBadge from "../components/ClassificacaoBadge";
+import HelpTooltip from "../components/HelpTooltip";
+import Pagination from "../components/Pagination";
 import { useResultadosUltimaImportacao } from "../hooks/useResultadosUltimaImportacao";
+import { exportarCsv } from "../utils/exportCsv";
 import { formatarMoeda, formatarNumero } from "../utils/format";
 
 const OPCOES_CLASSIFICACAO: Classificacao[] = ["Prioridade Alta", "Prioridade Média", "Prioridade Baixa"];
+const ITENS_POR_PAGINA = 10;
 
 interface LinhaProduto {
   codigo_produto: string;
   nome_produto: string;
   categoria: string | null;
   custo_gerencial_composto: number;
+  preco_venda_unitario: number | null;
   giro_90d: number | null;
   classificacao: Classificacao;
   desconto_maximo_percentual: number | null;
@@ -23,10 +30,12 @@ type ChaveOrdenacao = "custo_gerencial_composto" | "giro_90d";
 
 export default function ProdutosPage() {
   const estado = useResultadosUltimaImportacao();
+  const [termoBusca, setTermoBusca] = useState("");
   const [filtroClassificacao, setFiltroClassificacao] = useState<Classificacao | "todas">("todas");
   const [ordenacao, setOrdenacao] = useState<{ chave: ChaveOrdenacao; direcao: "asc" | "desc" } | null>(
     null,
   );
+  const [paginaAtual, setPaginaAtual] = useState(1);
 
   const linhas: LinhaProduto[] = useMemo(() => {
     if (estado.status !== "sucesso") return [];
@@ -40,6 +49,7 @@ export default function ProdutosPage() {
           nome_produto: linha.produtos.nome_produto,
           categoria: linha.produtos.categoria,
           custo_gerencial_composto: resultado.custo_gerencial_composto,
+          preco_venda_unitario: linha.preco_venda_unitario,
           giro_90d: resultado.giro_90d,
           classificacao: resultado.classificacao,
           desconto_maximo_percentual: resultado.desconto_maximo_percentual,
@@ -50,10 +60,15 @@ export default function ProdutosPage() {
   }, [estado]);
 
   const linhasFiltradas = useMemo(() => {
-    const filtradas =
-      filtroClassificacao === "todas"
-        ? linhas
-        : linhas.filter((linha) => linha.classificacao === filtroClassificacao);
+    const termo = termoBusca.trim().toLowerCase();
+
+    const filtradas = linhas.filter(
+      (linha) =>
+        (filtroClassificacao === "todas" || linha.classificacao === filtroClassificacao) &&
+        (termo === "" ||
+          linha.nome_produto.toLowerCase().includes(termo) ||
+          linha.codigo_produto.toLowerCase().includes(termo)),
+    );
 
     if (!ordenacao) return filtradas;
 
@@ -63,7 +78,14 @@ export default function ProdutosPage() {
       const valorB = b[ordenacao.chave] ?? -Infinity;
       return (valorA - valorB) * sinal;
     });
-  }, [linhas, filtroClassificacao, ordenacao]);
+  }, [linhas, filtroClassificacao, termoBusca, ordenacao]);
+
+  const totalPaginas = Math.max(1, Math.ceil(linhasFiltradas.length / ITENS_POR_PAGINA));
+  const paginaCorrigida = Math.min(paginaAtual, totalPaginas);
+  const linhasPaginadas = linhasFiltradas.slice(
+    (paginaCorrigida - 1) * ITENS_POR_PAGINA,
+    paginaCorrigida * ITENS_POR_PAGINA,
+  );
 
   function alternarOrdenacao(chave: ChaveOrdenacao) {
     setOrdenacao((atual) => {
@@ -72,9 +94,9 @@ export default function ProdutosPage() {
     });
   }
 
-  function indicadorOrdenacao(chave: ChaveOrdenacao): string {
-    if (ordenacao?.chave !== chave) return "";
-    return ordenacao.direcao === "asc" ? " ▲" : " ▼";
+  function iconeOrdenacao(chave: ChaveOrdenacao): ReactNode {
+    if (ordenacao?.chave !== chave) return null;
+    return ordenacao.direcao === "asc" ? <ChevronUp size={14} /> : <ChevronDown size={14} />;
   }
 
   function ariaSort(chave: ChaveOrdenacao): "ascending" | "descending" | "none" {
@@ -82,80 +104,192 @@ export default function ProdutosPage() {
     return ordenacao.direcao === "asc" ? "ascending" : "descending";
   }
 
-  if (estado.status === "carregando") return <p>Carregando...</p>;
+  function exportarProdutos() {
+    const cabecalho = [
+      "Nome",
+      "Categoria",
+      "Custo gerencial",
+      "Preço de venda",
+      "Giro (90d)",
+      "Classificação",
+      "Desconto máximo (%)",
+      "Desconto máximo (R$)",
+    ];
+
+    const linhasCsv = linhasFiltradas.map((linha) => [
+      linha.nome_produto,
+      linha.categoria ?? "",
+      formatarMoeda(linha.custo_gerencial_composto),
+      linha.preco_venda_unitario != null ? formatarMoeda(linha.preco_venda_unitario) : "",
+      linha.giro_90d != null ? formatarNumero(linha.giro_90d) : "",
+      linha.classificacao,
+      linha.desconto_maximo_percentual != null ? `${formatarNumero(linha.desconto_maximo_percentual)}%` : "",
+      linha.desconto_maximo_valor != null ? formatarMoeda(linha.desconto_maximo_valor) : "",
+    ]);
+
+    const dataDeHoje = new Date().toISOString().slice(0, 10);
+    exportarCsv(`produtos-stockwise-${dataDeHoje}.csv`, cabecalho, linhasCsv);
+  }
+
+  if (estado.status === "carregando") return <p className="text-slate-500">Carregando...</p>;
 
   if (estado.status === "vazio") {
     return (
-      <p>
-        Nenhuma importação encontrada. <Link to="/">Faça um upload primeiro</Link>.
+      <p className="text-slate-600">
+        Nenhuma importação encontrada.{" "}
+        <Link to="/" className="font-medium text-blue-600 hover:underline">
+          Faça um upload primeiro
+        </Link>
+        .
       </p>
     );
   }
 
   if (estado.status === "erro") {
-    return <p role="alert">{estado.mensagem}</p>;
+    return (
+      <p role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        {estado.mensagem}
+      </p>
+    );
   }
 
   return (
     <section>
-      <h1>Produtos</h1>
+      <h1 className="text-2xl font-semibold text-slate-800">Produtos</h1>
 
-      <label htmlFor="filtro-classificacao">Classificação</label>
-      <select
-        id="filtro-classificacao"
-        value={filtroClassificacao}
-        onChange={(evento) => setFiltroClassificacao(evento.target.value as Classificacao | "todas")}
-      >
-        <option value="todas">Todas</option>
-        {OPCOES_CLASSIFICACAO.map((opcao) => (
-          <option key={opcao} value={opcao}>
-            {opcao}
-          </option>
-        ))}
-      </select>
+      <div className="mt-6 flex flex-wrap items-center gap-3">
+        <div className="relative">
+          <Search
+            className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-slate-400"
+            size={16}
+          />
+          <input
+            type="search"
+            placeholder="Buscar por nome ou código..."
+            value={termoBusca}
+            onChange={(evento) => {
+              setTermoBusca(evento.target.value);
+              setPaginaAtual(1);
+            }}
+            className="w-64 rounded-lg border border-slate-200 bg-white py-2 pr-3 pl-9 text-sm text-slate-700 placeholder:text-slate-400 focus:border-blue-400 focus:outline-none"
+          />
+        </div>
 
-      <p>
-        {linhasFiltradas.length} produto{linhasFiltradas.length === 1 ? "" : "s"}
-      </p>
-
-      <table>
-        <thead>
-          <tr>
-            <th>Nome</th>
-            <th>Categoria</th>
-            <th aria-sort={ariaSort("custo_gerencial_composto")}>
-              <button type="button" onClick={() => alternarOrdenacao("custo_gerencial_composto")}>
-                Custo gerencial{indicadorOrdenacao("custo_gerencial_composto")}
-              </button>
-            </th>
-            <th aria-sort={ariaSort("giro_90d")}>
-              <button type="button" onClick={() => alternarOrdenacao("giro_90d")}>
-                Giro (90d){indicadorOrdenacao("giro_90d")}
-              </button>
-            </th>
-            <th>Classificação</th>
-            <th>Desconto máximo sugerido</th>
-          </tr>
-        </thead>
-        <tbody>
-          {linhasFiltradas.map((linha) => (
-            <tr key={linha.codigo_produto}>
-              <td>{linha.nome_produto}</td>
-              <td>{linha.categoria}</td>
-              <td>{formatarMoeda(linha.custo_gerencial_composto)}</td>
-              <td>{linha.giro_90d != null ? formatarNumero(linha.giro_90d) : "-"}</td>
-              <td>
-                <ClassificacaoBadge classificacao={linha.classificacao} />
-              </td>
-              <td>
-                {linha.desconto_maximo_percentual != null && linha.desconto_maximo_valor != null
-                  ? `${formatarNumero(linha.desconto_maximo_percentual)}% (${formatarMoeda(linha.desconto_maximo_valor)})`
-                  : "-"}
-              </td>
-            </tr>
+        <label htmlFor="filtro-classificacao" className="sr-only">
+          Classificação
+        </label>
+        <select
+          id="filtro-classificacao"
+          value={filtroClassificacao}
+          onChange={(evento) => {
+            setFiltroClassificacao(evento.target.value as Classificacao | "todas");
+            setPaginaAtual(1);
+          }}
+          className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:border-blue-400 focus:outline-none"
+        >
+          <option value="todas">Todas as classificações</option>
+          {OPCOES_CLASSIFICACAO.map((opcao) => (
+            <option key={opcao} value={opcao}>
+              {opcao}
+            </option>
           ))}
-        </tbody>
-      </table>
+        </select>
+
+        <span className="text-sm text-slate-500">
+          {linhasFiltradas.length} produto{linhasFiltradas.length === 1 ? "" : "s"}
+        </span>
+
+        <button
+          type="button"
+          onClick={exportarProdutos}
+          disabled={linhasFiltradas.length === 0}
+          className="ml-auto flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          <Download size={16} />
+          Exportar Excel
+        </button>
+      </div>
+
+      <div className="mt-4 overflow-hidden rounded-xl border border-slate-200 bg-white">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-left text-xs font-medium tracking-wide text-slate-500 uppercase">
+              <th className="px-5 py-3">Nome</th>
+              <th className="px-5 py-3">Categoria</th>
+              <th className="px-5 py-3" aria-sort={ariaSort("custo_gerencial_composto")}>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => alternarOrdenacao("custo_gerencial_composto")}
+                    className="flex items-center gap-1 tracking-wide text-slate-500 uppercase hover:text-slate-700"
+                  >
+                    Custo gerencial
+                    {iconeOrdenacao("custo_gerencial_composto")}
+                  </button>
+                  <HelpTooltip texto="Custo de aquisição + armazenagem + oportunidade, proporcionais ao tempo em estoque. Ex: R$ 100 parado 30 dias pode chegar a R$ 101,99." />
+                </div>
+              </th>
+              <th className="px-5 py-3">Preço de venda</th>
+              <th className="px-5 py-3" aria-sort={ariaSort("giro_90d")}>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => alternarOrdenacao("giro_90d")}
+                    className="flex items-center gap-1 tracking-wide text-slate-500 uppercase hover:text-slate-700"
+                  >
+                    Giro (90d)
+                    {iconeOrdenacao("giro_90d")}
+                  </button>
+                  <HelpTooltip texto="Vendas dos últimos 90 dias em relação ao estoque. Ex: giro 5,89 = girou quase 6x o estoque; perto de 0 = produto parado." />
+                </div>
+              </th>
+              <th className="px-5 py-3">
+                <div className="flex items-center gap-1">
+                  Classificação
+                  <HelpTooltip
+                    texto="Combina giro, custo gerencial e estoque numa prioridade de ação. Alta = parado e caro, precisa de atenção. Baixa = saudável."
+                    alinhar="direita"
+                  />
+                </div>
+              </th>
+              <th className="px-5 py-3">
+                <div className="flex items-center gap-1">
+                  Desconto máximo sugerido
+                  <HelpTooltip
+                    texto="Maior desconto possível sem perder a margem mínima de 10%. Ex: preço R$ 34,90, custo R$ 22,69 → até 28,48% (R$ 9,94)."
+                    alinhar="direita"
+                  />
+                </div>
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {linhasPaginadas.map((linha) => (
+              <tr key={linha.codigo_produto} className="hover:bg-slate-50">
+                <td className="px-5 py-3 font-medium text-slate-800">{linha.nome_produto}</td>
+                <td className="px-5 py-3 text-slate-600">{linha.categoria}</td>
+                <td className="px-5 py-3 text-slate-600">{formatarMoeda(linha.custo_gerencial_composto)}</td>
+                <td className="px-5 py-3 text-slate-600">
+                  {linha.preco_venda_unitario != null ? formatarMoeda(linha.preco_venda_unitario) : "-"}
+                </td>
+                <td className="px-5 py-3 text-slate-600">
+                  {linha.giro_90d != null ? formatarNumero(linha.giro_90d) : "-"}
+                </td>
+                <td className="px-5 py-3">
+                  <ClassificacaoBadge classificacao={linha.classificacao} />
+                </td>
+                <td className="px-5 py-3 text-slate-600">
+                  {linha.desconto_maximo_percentual != null && linha.desconto_maximo_valor != null
+                    ? `${formatarNumero(linha.desconto_maximo_percentual)}% (${formatarMoeda(linha.desconto_maximo_valor)})`
+                    : "-"}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        <Pagination paginaAtual={paginaCorrigida} totalPaginas={totalPaginas} onMudarPagina={setPaginaAtual} />
+      </div>
     </section>
   );
 }

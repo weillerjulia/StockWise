@@ -35,6 +35,7 @@ export interface ResultadoAnalise {
 
 export interface ResultadoImportacaoLinha {
   id: string;
+  preco_venda_unitario: number | null;
   produtos: Produto;
   // Relação 1:1 (estoque_snapshot_id é unique em resultados_analise) — o
   // PostgREST embute como objeto único, não como array.

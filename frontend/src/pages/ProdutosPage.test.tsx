@@ -14,6 +14,7 @@ function criarLinha(
 ) {
   return {
     id: codigo,
+    preco_venda_unitario: custo * 2,
     produtos: { codigo_produto: codigo, nome_produto: nome, categoria: "Motor", fornecedor: "X" },
     resultados_analise: {
       custo_gerencial_composto: custo,

@@ -38,9 +38,9 @@ describe("UploadPage", () => {
 
     await waitFor(() => expect(screen.getByText(/resumo da importação/i)).toBeInTheDocument());
 
-    expect(screen.getByText(/total de linhas: 2/i)).toBeInTheDocument();
-    expect(screen.getByText(/linhas importadas: 1/i)).toBeInTheDocument();
-    expect(screen.getByText(/linhas com erro: 1/i)).toBeInTheDocument();
+    expect(screen.getByText(/total de linhas/i).nextElementSibling).toHaveTextContent("2");
+    expect(screen.getByText(/^importadas$/i).nextElementSibling).toHaveTextContent("1");
+    expect(screen.getByText(/com erro/i).nextElementSibling).toHaveTextContent("1");
     expect(screen.getByText("custo_aquisicao_unitario inválido")).toBeInTheDocument();
     expect(localStorage.getItem("stockwise:ultimaImportacaoId")).toBe("importacao-1");
   });

@@ -1,14 +1,16 @@
 import type { Classificacao } from "../api/types";
 
 const CORES: Record<Classificacao, string> = {
-  "Prioridade Alta": "#dc2626",
-  "Prioridade Média": "#f59e0b",
-  "Prioridade Baixa": "#16a34a",
+  "Prioridade Alta": "bg-red-600",
+  "Prioridade Média": "bg-amber-500",
+  "Prioridade Baixa": "bg-green-600",
 };
 
 export default function ClassificacaoBadge({ classificacao }: { classificacao: Classificacao }) {
   return (
-    <span className="badge-classificacao" style={{ backgroundColor: CORES[classificacao] }}>
+    <span
+      className={`inline-block whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold text-white ${CORES[classificacao]}`}
+    >
       {classificacao}
     </span>
   );
