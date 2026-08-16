@@ -8,3 +8,10 @@ export function formatarNumero(valor: number, casasDecimais = 2): string {
     maximumFractionDigits: casasDecimais,
   });
 }
+
+export function formatarDataHora(isoString: string): string {
+  return new Date(isoString).toLocaleString("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short",
+  });
+}

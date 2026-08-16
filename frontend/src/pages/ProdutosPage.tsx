@@ -26,7 +26,11 @@ interface LinhaProduto {
   desconto_maximo_valor: number | null;
 }
 
-type ChaveOrdenacao = "custo_gerencial_composto" | "giro_90d";
+type ChaveOrdenacao =
+  | "custo_gerencial_composto"
+  | "giro_90d"
+  | "desconto_maximo_percentual"
+  | "desconto_maximo_valor";
 
 export default function ProdutosPage() {
   const estado = useResultadosUltimaImportacao();
@@ -155,9 +159,7 @@ export default function ProdutosPage() {
 
   return (
     <section>
-      <h1 className="text-2xl font-semibold text-slate-800">Produtos</h1>
-
-      <div className="mt-6 flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <div className="relative">
           <Search
             className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-slate-400"
@@ -210,13 +212,14 @@ export default function ProdutosPage() {
         </button>
       </div>
 
-      <div className="mt-4 overflow-hidden rounded-xl border border-slate-200 bg-white">
-        <table className="w-full text-sm">
+      <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-md">
+        <div className="overflow-x-auto">
+        <table className="w-full min-w-[960px] text-sm">
           <thead>
             <tr className="text-left text-xs font-medium tracking-wide text-slate-500 uppercase">
-              <th className="px-5 py-3">Nome</th>
-              <th className="px-5 py-3">Categoria</th>
-              <th className="px-5 py-3" aria-sort={ariaSort("custo_gerencial_composto")}>
+              <th className="px-4 py-3">Nome</th>
+              <th className="px-4 py-3">Categoria</th>
+              <th className="px-4 py-3" aria-sort={ariaSort("custo_gerencial_composto")}>
                 <div className="flex items-center gap-1">
                   <button
                     type="button"
@@ -229,8 +232,8 @@ export default function ProdutosPage() {
                   <HelpTooltip texto="Custo de aquisição + armazenagem + oportunidade, proporcionais ao tempo em estoque. Ex: R$ 100 parado 30 dias pode chegar a R$ 101,99." />
                 </div>
               </th>
-              <th className="px-5 py-3">Preço de venda</th>
-              <th className="px-5 py-3" aria-sort={ariaSort("giro_90d")}>
+              <th className="px-4 py-3">Preço de venda</th>
+              <th className="px-4 py-3" aria-sort={ariaSort("giro_90d")}>
                 <div className="flex items-center gap-1">
                   <button
                     type="button"
@@ -243,7 +246,7 @@ export default function ProdutosPage() {
                   <HelpTooltip texto="Vendas dos últimos 90 dias em relação ao estoque. Ex: giro 5,89 = girou quase 6x o estoque; perto de 0 = produto parado." />
                 </div>
               </th>
-              <th className="px-5 py-3">
+              <th className="px-4 py-3">
                 <div className="flex items-center gap-1">
                   Classificação
                   <HelpTooltip
@@ -252,9 +255,32 @@ export default function ProdutosPage() {
                   />
                 </div>
               </th>
-              <th className="px-5 py-3">
+              <th className="px-4 py-3" aria-sort={ariaSort("desconto_maximo_percentual")}>
                 <div className="flex items-center gap-1">
-                  Desconto máximo sugerido
+                  <button
+                    type="button"
+                    onClick={() => alternarOrdenacao("desconto_maximo_percentual")}
+                    className="flex items-center gap-1 tracking-wide text-slate-500 uppercase hover:text-slate-700"
+                  >
+                    Desconto máximo sugerido (%)
+                    {iconeOrdenacao("desconto_maximo_percentual")}
+                  </button>
+                  <HelpTooltip
+                    texto="Maior desconto possível sem perder a margem mínima de 10%. Ex: preço R$ 34,90, custo R$ 22,69 → até 28,48% (R$ 9,94)."
+                    alinhar="direita"
+                  />
+                </div>
+              </th>
+              <th className="px-4 py-3" aria-sort={ariaSort("desconto_maximo_valor")}>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => alternarOrdenacao("desconto_maximo_valor")}
+                    className="flex items-center gap-1 tracking-wide text-slate-500 uppercase hover:text-slate-700"
+                  >
+                    Desconto máximo sugerido (R$)
+                    {iconeOrdenacao("desconto_maximo_valor")}
+                  </button>
                   <HelpTooltip
                     texto="Maior desconto possível sem perder a margem mínima de 10%. Ex: preço R$ 34,90, custo R$ 22,69 → até 28,48% (R$ 9,94)."
                     alinhar="direita"
@@ -265,28 +291,32 @@ export default function ProdutosPage() {
           </thead>
           <tbody className="divide-y divide-slate-100">
             {linhasPaginadas.map((linha) => (
-              <tr key={linha.codigo_produto} className="hover:bg-slate-50">
-                <td className="px-5 py-3 font-medium text-slate-800">{linha.nome_produto}</td>
-                <td className="px-5 py-3 text-slate-600">{linha.categoria}</td>
-                <td className="px-5 py-3 text-slate-600">{formatarMoeda(linha.custo_gerencial_composto)}</td>
-                <td className="px-5 py-3 text-slate-600">
+              <tr key={linha.codigo_produto} className="transition-colors hover:bg-slate-50">
+                <td className="px-4 py-3 font-medium text-slate-800">{linha.nome_produto}</td>
+                <td className="px-4 py-3 text-slate-600">{linha.categoria}</td>
+                <td className="px-4 py-3 text-slate-600">{formatarMoeda(linha.custo_gerencial_composto)}</td>
+                <td className="px-4 py-3 text-slate-600">
                   {linha.preco_venda_unitario != null ? formatarMoeda(linha.preco_venda_unitario) : "-"}
                 </td>
-                <td className="px-5 py-3 text-slate-600">
+                <td className="px-4 py-3 text-slate-600">
                   {linha.giro_90d != null ? formatarNumero(linha.giro_90d) : "-"}
                 </td>
-                <td className="px-5 py-3">
+                <td className="px-4 py-3">
                   <ClassificacaoBadge classificacao={linha.classificacao} />
                 </td>
-                <td className="px-5 py-3 text-slate-600">
-                  {linha.desconto_maximo_percentual != null && linha.desconto_maximo_valor != null
-                    ? `${formatarNumero(linha.desconto_maximo_percentual)}% (${formatarMoeda(linha.desconto_maximo_valor)})`
+                <td className="px-4 py-3 text-slate-600">
+                  {linha.desconto_maximo_percentual != null
+                    ? `${formatarNumero(linha.desconto_maximo_percentual)}%`
                     : "-"}
+                </td>
+                <td className="px-4 py-3 text-slate-600">
+                  {linha.desconto_maximo_valor != null ? formatarMoeda(linha.desconto_maximo_valor) : "-"}
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
+        </div>
 
         <Pagination paginaAtual={paginaCorrigida} totalPaginas={totalPaginas} onMudarPagina={setPaginaAtual} />
       </div>

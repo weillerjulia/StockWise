@@ -105,6 +105,14 @@ def inserir_resultado_analise(
     ).execute()
 
 
+def buscar_importacao(importacao_id: str) -> dict[str, object] | None:
+    cliente = get_supabase_client()
+    resposta = (
+        cliente.table("importacoes").select("*").eq("id", importacao_id).limit(1).execute()
+    )
+    return resposta.data[0] if resposta.data else None
+
+
 def listar_resultados_por_importacao(importacao_id: str) -> list[dict[str, object]]:
     cliente = get_supabase_client()
     resposta = (

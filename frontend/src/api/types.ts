@@ -13,6 +13,17 @@ export interface RespostaUpload {
   erros: ErroImportacao[];
 }
 
+export interface Importacao {
+  id: string;
+  nome_arquivo: string;
+  status: "processando" | "concluida" | "concluida_com_erros" | "falhou";
+  total_linhas: number;
+  linhas_importadas: number;
+  linhas_com_erro: number;
+  iniciada_em: string;
+  concluida_em: string | null;
+}
+
 export interface Produto {
   codigo_produto: string;
   nome_produto: string;
@@ -36,6 +47,8 @@ export interface ResultadoAnalise {
 export interface ResultadoImportacaoLinha {
   id: string;
   preco_venda_unitario: number | null;
+  quantidade_estoque_atual: number;
+  estoque_minimo: number;
   produtos: Produto;
   // Relação 1:1 (estoque_snapshot_id é unique em resultados_analise) — o
   // PostgREST embute como objeto único, não como array.

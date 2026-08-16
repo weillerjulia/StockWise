@@ -2,7 +2,7 @@
 
 **Sistema de Apoio à Decisão para Definição de Estratégias Promocionais Baseado no Custo Gerencial de Estoque em Autopeças**
 
-> Status: Projeto em fase de preparação para iniciar o desenvolvimento.
+> Status: MVP funcional — upload de CSV, cálculos de custo gerencial/giro/classificação/desconto máximo, dashboard web e análise exploratória com K-Means.
 
 ---
 
@@ -55,53 +55,66 @@ Aplicação de técnicas de análise exploratória e modelos de machine learning
 
 ---
 
-## Arquitetura Prevista
+## Arquitetura
 
-O sistema será organizado em três camadas principais:
+O sistema é organizado em três camadas, sem acesso direto do frontend ao banco:
 
 ```
 ┌─────────────────────────────────────────────┐
 │              Camada de Dados                │
-│  ERP de Estoque (CSV / API / banco direto)  │
+│      CSV exportado manualmente do ERP       │
 └────────────────────┬────────────────────────┘
-                     │ Pipeline ETL
+                     │ Upload manual
 ┌────────────────────▼────────────────────────┐
 │       Camada de Processamento e Análise     │
-│  • ETL + Banco de Dados Analítico           │
+│  • Parsing e validação do CSV               │
 │  • Módulo de Custo Gerencial Composto       │
-│  • Modelos Analíticos / ML (scikit-learn)   │
+│  • Módulo de Giro de Estoque                │
 │  • Módulo de Classificação de Produtos      │
-│  • Módulo de Estratégias Promocionais       │
+│  • Módulo de Desconto Máximo Sugerido       │
+│  • Banco de dados: PostgreSQL (Supabase)    │
 └────────────────────┬────────────────────────┘
                      │ API REST
 ┌────────────────────▼────────────────────────┐
 │          Camada de Apresentação             │
 │  • Backend: FastAPI (Python)                │
-│  • Frontend: React + Dashboards Interativos │
+│  • Frontend: React + TypeScript (dashboard) │
 └─────────────────────────────────────────────┘
-
 ```
+
+O frontend nunca fala com o Supabase diretamente — só com a API FastAPI, que
+é o único componente com a service key do banco.
+
+> A análise exploratória com K-Means (`backend/analysis/`) roda à parte, num
+> notebook Jupyter que lê diretamente do Supabase — não faz parte do fluxo
+> da aplicação web, servindo apenas para validar a classificação por regras
+> do módulo 4.
 
 ---
 
-## Stack Tecnológica Prevista
+## Stack Tecnológica
 
-**Backend e Dados**
-- Python 3.11+
-- FastAPI ou Flask
-- pandas, scikit-learn
-- PostgreSQL via Supabase
+**Backend**
+- Python 3.11+, FastAPI, Uvicorn
+- pydantic-settings (configuração via `.env`), python-multipart (upload de arquivo)
+- Parsing de CSV com a biblioteca padrão `csv` (detecção automática de delimitador e
+  codificação) — sem pandas na API
+- Supabase (cliente Python) + PostgreSQL como banco
+- pytest + httpx (testes)
 
 **Frontend**
-- React
-- Bibliotecas de visualização de dados (Recharts / Chart.js)
+- React 19 + TypeScript, Vite (build/dev server)
+- React Router (navegação entre telas)
+- Tailwind CSS v4 (estilização)
+- lucide-react (ícones)
+- Recharts (gráficos do dashboard)
+- Vitest + Testing Library (testes)
 
-**Infraestrutura e Qualidade**
-- GitHub (CI/CD)
-- SonarCloud (análise estática)
-- Prometheus (monitoramento)
-- Deploy em nuvem (AWS / Azure)
-- Cobertura de testes: >= 75% backend, >= 25% frontend
+**Análise exploratória de dados**
+- Jupyter Notebook
+- pandas, scikit-learn (K-Means, StandardScaler, silhouette score)
+- matplotlib (visualização)
+- python-dotenv (leitura das credenciais do `.env`)
 
 ---
 

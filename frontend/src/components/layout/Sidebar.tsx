@@ -1,16 +1,20 @@
-import { LayoutDashboard, Package, Upload } from "lucide-react";
+import { HelpCircle, LayoutDashboard, Package, Upload, Warehouse } from "lucide-react";
 import { NavLink } from "react-router-dom";
 
 const ITENS_NAV = [
   { to: "/", label: "Upload", icone: Upload, fim: true },
   { to: "/dashboard", label: "Visão geral", icone: LayoutDashboard, fim: false },
   { to: "/produtos", label: "Produtos", icone: Package, fim: false },
+  { to: "/ajuda", label: "Ajuda", icone: HelpCircle, fim: false },
 ];
 
 export default function Sidebar() {
   return (
-    <aside className="flex h-screen w-64 shrink-0 flex-col border-r border-slate-200 bg-white">
-      <div className="px-6 py-6">
+    <aside className="flex h-full w-64 shrink-0 flex-col border-r border-slate-200 bg-white shadow-sm">
+      <div className="flex items-center gap-2.5 px-6 py-6">
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-600">
+          <Warehouse size={18} className="text-white" />
+        </span>
         <span className="text-lg font-semibold text-slate-800">StockWise</span>
       </div>
 
@@ -21,8 +25,8 @@ export default function Sidebar() {
             to={to}
             end={fim}
             className={({ isActive }) =>
-              `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                isActive ? "bg-blue-50 text-blue-600" : "text-slate-600 hover:bg-slate-50"
+              `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
+                isActive ? "bg-blue-50 text-blue-600" : "text-slate-600 hover:bg-slate-100"
               }`
             }
           >

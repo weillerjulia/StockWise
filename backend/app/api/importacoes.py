@@ -101,3 +101,11 @@ async def importar_csv(arquivo: UploadFile = File(...)) -> dict[str, object]:
 @router.get("/{importacao_id}/resultados")
 def listar_resultados(importacao_id: str) -> list[dict[str, object]]:
     return repo.listar_resultados_por_importacao(importacao_id)
+
+
+@router.get("/{importacao_id}")
+def buscar_importacao(importacao_id: str) -> dict[str, object]:
+    importacao = repo.buscar_importacao(importacao_id)
+    if importacao is None:
+        raise HTTPException(status_code=404, detail="importação não encontrada")
+    return importacao

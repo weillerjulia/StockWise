@@ -15,7 +15,7 @@ export default function Pagination({ paginaAtual, totalPaginas, onMudarPagina }:
         type="button"
         onClick={() => onMudarPagina(paginaAtual - 1)}
         disabled={paginaAtual === 1}
-        className="flex items-center gap-1 rounded-md px-2 py-1 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+        className="flex items-center gap-1 rounded-lg px-2 py-1 text-sm font-medium text-slate-600 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
       >
         <ChevronLeft size={16} />
         Anterior
@@ -29,7 +29,7 @@ export default function Pagination({ paginaAtual, totalPaginas, onMudarPagina }:
         type="button"
         onClick={() => onMudarPagina(paginaAtual + 1)}
         disabled={paginaAtual === totalPaginas}
-        className="flex items-center gap-1 rounded-md px-2 py-1 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+        className="flex items-center gap-1 rounded-lg px-2 py-1 text-sm font-medium text-slate-600 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
       >
         Próxima
         <ChevronRight size={16} />

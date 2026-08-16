@@ -130,3 +130,32 @@ def test_get_resultados_retorna_dados_do_repositorio(monkeypatch):
 
     assert resposta.status_code == 200
     assert resposta.json() == dados_fake
+
+
+def test_buscar_importacao_retorna_dados_do_repositorio(monkeypatch):
+    importacao_fake = {
+        "id": "importacao-1",
+        "nome_arquivo": "estoque.csv",
+        "status": "concluida",
+        "total_linhas": 2,
+        "linhas_importadas": 2,
+        "linhas_com_erro": 0,
+        "iniciada_em": "2026-08-16T10:00:00+00:00",
+        "concluida_em": "2026-08-16T10:00:05+00:00",
+    }
+    monkeypatch.setattr(
+        importacoes_module.repo, "buscar_importacao", lambda importacao_id: importacao_fake
+    )
+
+    resposta = client.get("/importacoes/importacao-1")
+
+    assert resposta.status_code == 200
+    assert resposta.json() == importacao_fake
+
+
+def test_buscar_importacao_inexistente_retorna_404(monkeypatch):
+    monkeypatch.setattr(importacoes_module.repo, "buscar_importacao", lambda importacao_id: None)
+
+    resposta = client.get("/importacoes/id-que-nao-existe")
+
+    assert resposta.status_code == 404

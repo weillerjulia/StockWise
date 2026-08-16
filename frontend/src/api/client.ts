@@ -1,4 +1,4 @@
-import type { RespostaUpload, ResultadoImportacaoLinha } from "./types";
+import type { Importacao, RespostaUpload, ResultadoImportacaoLinha } from "./types";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
 
@@ -34,6 +34,16 @@ export async function getResultadosImportacao(
 
   if (!resposta.ok) {
     throw new Error(await extrairMensagemErro(resposta, "Falha ao buscar os resultados da importação."));
+  }
+
+  return resposta.json();
+}
+
+export async function getImportacao(importacaoId: string): Promise<Importacao> {
+  const resposta = await fetch(`${API_BASE_URL}/importacoes/${importacaoId}`);
+
+  if (!resposta.ok) {
+    throw new Error(await extrairMensagemErro(resposta, "Falha ao buscar a importação."));
   }
 
   return resposta.json();

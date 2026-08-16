@@ -34,16 +34,18 @@ CSV (upload manual)  →  Backend (FastAPI)  →  Supabase (Postgres)
 ## 3. Stack tecnológica (implementada)
 
 **Backend** (`backend/requirements.txt`): FastAPI, Uvicorn, pydantic-settings,
-supabase-py, python-multipart (upload de arquivo), pandas, pytest, httpx
-(`TestClient`).
+supabase-py, python-multipart (upload de arquivo), pytest, httpx
+(`TestClient`). Parsing de CSV com a biblioteca padrão `csv` — sem pandas na
+API (pandas é usado só na análise exploratória, ver abaixo).
 
-**Frontend** (`frontend/package.json`): React 19, React Router, Recharts
-(gráfico do dashboard), Vite, Vitest + Testing Library.
+**Frontend** (`frontend/package.json`): React 19 + TypeScript, Vite,
+React Router, Tailwind CSS v4, lucide-react (ícones), Recharts (gráfico do
+dashboard), Vitest + Testing Library.
 
 **Banco**: Supabase (Postgres gerenciado), schema em `backend/db/schema.sql`.
 
 **Análise exploratória** (`backend/analysis/requirements.txt`, isolado do
-runtime da API): scikit-learn, matplotlib, python-dotenv, Jupyter.
+runtime da API): pandas, scikit-learn, matplotlib, python-dotenv, Jupyter.
 
 ## 4. Fluxo de dados ponta a ponta
 

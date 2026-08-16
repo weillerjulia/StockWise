@@ -2,6 +2,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { salvarUltimaImportacaoId } from "../api/storage";
 import UploadPage from "./UploadPage";
 
 describe("UploadPage", () => {
@@ -43,5 +44,35 @@ describe("UploadPage", () => {
     expect(screen.getByText(/com erro/i).nextElementSibling).toHaveTextContent("1");
     expect(screen.getByText("custo_aquisicao_unitario inválido")).toBeInTheDocument();
     expect(localStorage.getItem("stockwise:ultimaImportacaoId")).toBe("importacao-1");
+  });
+
+  it("mostra mensagem de que não há importação quando nunca houve upload", async () => {
+    render(<UploadPage />);
+
+    await waitFor(() =>
+      expect(screen.getByText(/nenhuma importação realizada ainda/i)).toBeInTheDocument(),
+    );
+  });
+
+  it("mostra o resumo da última importação salva ao carregar a página", async () => {
+    salvarUltimaImportacaoId("importacao-2");
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        id: "importacao-2",
+        nome_arquivo: "estoque.csv",
+        status: "concluida",
+        total_linhas: 3,
+        linhas_importadas: 3,
+        linhas_com_erro: 0,
+        iniciada_em: "2026-08-16T10:00:00+00:00",
+        concluida_em: "2026-08-16T10:00:05+00:00",
+      }),
+    } as Response);
+
+    render(<UploadPage />);
+
+    await waitFor(() => expect(screen.getByText("Concluída")).toBeInTheDocument());
+    expect(screen.getByText(/^última importação$/i)).toBeInTheDocument();
   });
 });
