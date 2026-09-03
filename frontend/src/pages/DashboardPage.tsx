@@ -170,7 +170,7 @@ export default function DashboardPage() {
             <XAxis dataKey="categoria" tick={{ fill: "#64748b", fontSize: 12 }} />
             <YAxis tick={{ fill: "#64748b", fontSize: 12 }} tickFormatter={(valor) => formatarMoeda(valor)} />
             <Tooltip formatter={(valor) => formatarMoeda(Number(valor))} />
-            <Bar dataKey="valor" fill="#2563eb" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="valor" fill="#bfdbfe" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>

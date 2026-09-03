@@ -99,8 +99,12 @@ export default function ProdutosPage() {
   }
 
   function iconeOrdenacao(chave: ChaveOrdenacao): ReactNode {
-    if (ordenacao?.chave !== chave) return null;
-    return ordenacao.direcao === "asc" ? <ChevronUp size={14} /> : <ChevronDown size={14} />;
+    const ativo = ordenacao?.chave === chave;
+    return (
+      <span className="inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center">
+        {ativo && (ordenacao.direcao === "asc" ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}
+      </span>
+    );
   }
 
   function ariaSort(chave: ChaveOrdenacao): "ascending" | "descending" | "none" {
@@ -214,12 +218,12 @@ export default function ProdutosPage() {
 
       <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-md">
         <div className="overflow-x-auto">
-        <table className="w-full min-w-[960px] text-sm">
+        <table className="w-full min-w-[960px] table-fixed text-sm">
           <thead>
             <tr className="text-left text-xs font-medium tracking-wide text-slate-500 uppercase">
-              <th className="px-4 py-3">Nome</th>
-              <th className="px-4 py-3">Categoria</th>
-              <th className="px-4 py-3" aria-sort={ariaSort("custo_gerencial_composto")}>
+              <th className="w-[18%] px-4 py-3">Nome</th>
+              <th className="w-[10%] px-4 py-3">Categoria</th>
+              <th className="w-[11%] px-4 py-3" aria-sort={ariaSort("custo_gerencial_composto")}>
                 <div className="flex items-center gap-1">
                   <button
                     type="button"
@@ -232,8 +236,8 @@ export default function ProdutosPage() {
                   <HelpTooltip texto="Custo de aquisição + armazenagem + oportunidade, proporcionais ao tempo em estoque. Ex: R$ 100 parado 30 dias pode chegar a R$ 101,99." />
                 </div>
               </th>
-              <th className="px-4 py-3">Preço de venda</th>
-              <th className="px-4 py-3" aria-sort={ariaSort("giro_90d")}>
+              <th className="w-[11%] px-4 py-3">Preço de venda</th>
+              <th className="w-[8%] px-4 py-3" aria-sort={ariaSort("giro_90d")}>
                 <div className="flex items-center gap-1">
                   <button
                     type="button"
@@ -246,7 +250,7 @@ export default function ProdutosPage() {
                   <HelpTooltip texto="Vendas dos últimos 90 dias em relação ao estoque. Ex: giro 5,89 = girou quase 6x o estoque; perto de 0 = produto parado." />
                 </div>
               </th>
-              <th className="px-4 py-3">
+              <th className="w-[13%] px-4 py-3">
                 <div className="flex items-center gap-1">
                   Classificação
                   <HelpTooltip
@@ -255,7 +259,7 @@ export default function ProdutosPage() {
                   />
                 </div>
               </th>
-              <th className="px-4 py-3" aria-sort={ariaSort("desconto_maximo_percentual")}>
+              <th className="w-[14%] px-4 py-3" aria-sort={ariaSort("desconto_maximo_percentual")}>
                 <div className="flex items-center gap-1">
                   <button
                     type="button"
@@ -271,7 +275,7 @@ export default function ProdutosPage() {
                   />
                 </div>
               </th>
-              <th className="px-4 py-3" aria-sort={ariaSort("desconto_maximo_valor")}>
+              <th className="w-[15%] px-4 py-3" aria-sort={ariaSort("desconto_maximo_valor")}>
                 <div className="flex items-center gap-1">
                   <button
                     type="button"

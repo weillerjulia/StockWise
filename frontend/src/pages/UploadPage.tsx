@@ -93,7 +93,7 @@ export default function UploadPage() {
   }
 
   return (
-    <section className="mx-auto max-w-2xl">
+    <section>
       <p className="text-sm text-slate-500">
         Envie o CSV exportado do ERP para calcular custo gerencial, giro e desconto máximo por produto.
       </p>
