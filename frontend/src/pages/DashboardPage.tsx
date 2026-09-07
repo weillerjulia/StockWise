@@ -58,6 +58,7 @@ export default function DashboardPage() {
         categoria: linha.produtos.categoria ?? "Sem categoria",
         custo_gerencial_composto: resultado.custo_gerencial_composto,
         giro_90d: resultado.giro_90d,
+        dias_em_estoque: resultado.dias_em_estoque,
       };
     })
     .filter((item): item is NonNullable<typeof item> => item != null);
@@ -99,6 +100,10 @@ export default function DashboardPage() {
 
   const top5PorCusto = [...produtosComCusto]
     .sort((a, b) => b.custo_gerencial_composto - a.custo_gerencial_composto)
+    .slice(0, 5);
+
+  const top5ParadosHaMaisTempo = [...produtosComCusto]
+    .sort((a, b) => b.dias_em_estoque - a.dias_em_estoque)
     .slice(0, 5);
 
   const giros90d = produtosComCusto
@@ -164,27 +169,47 @@ export default function DashboardPage() {
 
       <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-md">
         <h2 className="text-sm font-semibold text-slate-800">Valor imobilizado por categoria (R$)</h2>
-        <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={dadosPorCategoria}>
+        <ResponsiveContainer width="100%" height={Math.max(300, dadosPorCategoria.length * 36)}>
+          <BarChart data={dadosPorCategoria} layout="vertical" margin={{ left: 24 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-            <XAxis dataKey="categoria" tick={{ fill: "#64748b", fontSize: 12 }} />
-            <YAxis tick={{ fill: "#64748b", fontSize: 12 }} tickFormatter={(valor) => formatarMoeda(valor)} />
+            <XAxis
+              type="number"
+              tick={{ fill: "#64748b", fontSize: 12 }}
+              tickFormatter={(valor) => formatarMoeda(valor)}
+            />
+            <YAxis type="category" dataKey="categoria" tick={{ fill: "#64748b", fontSize: 12 }} width={150} />
             <Tooltip formatter={(valor) => formatarMoeda(Number(valor))} />
-            <Bar dataKey="valor" fill="#bfdbfe" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="valor" fill="#bfdbfe" radius={[0, 4, 4, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>
 
-      <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-md">
-        <h2 className="text-sm font-semibold text-slate-800">Top 5 produtos por custo gerencial</h2>
-        <ul className="mt-4 divide-y divide-slate-100">
-          {top5PorCusto.map((produto) => (
-            <li key={produto.nome_produto} className="flex items-center justify-between py-2.5 text-sm">
-              <span className="text-slate-700">{produto.nome_produto}</span>
-              <span className="font-medium text-slate-800">{formatarMoeda(produto.custo_gerencial_composto)}</span>
-            </li>
-          ))}
-        </ul>
+      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-md">
+          <h2 className="text-sm font-semibold text-slate-800">Top 5 produtos por custo gerencial</h2>
+          <ul className="mt-4 divide-y divide-slate-100">
+            {top5PorCusto.map((produto) => (
+              <li key={produto.nome_produto} className="flex items-center justify-between py-2.5 text-sm">
+                <span className="text-slate-700">{produto.nome_produto}</span>
+                <span className="font-medium text-slate-800">{formatarMoeda(produto.custo_gerencial_composto)}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-md">
+          <h2 className="text-sm font-semibold text-slate-800">Top 5 produtos parados há mais tempo</h2>
+          <ul className="mt-4 divide-y divide-slate-100">
+            {top5ParadosHaMaisTempo.map((produto) => (
+              <li key={produto.nome_produto} className="flex items-center justify-between py-2.5 text-sm">
+                <span className="text-slate-700">{produto.nome_produto}</span>
+                <span className="font-medium text-slate-800">
+                  {produto.dias_em_estoque} dia{produto.dias_em_estoque === 1 ? "" : "s"}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
     </section>
   );

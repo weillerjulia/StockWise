@@ -1,6 +1,7 @@
 import { UploadCloud } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
+import KpiCard from "../components/KpiCard";
 import { getImportacao, uploadCsv } from "../api/client";
 import { obterUltimaImportacaoId, salvarUltimaImportacaoId } from "../api/storage";
 import type { Importacao, RespostaUpload } from "../api/types";
@@ -43,19 +44,21 @@ const LABEL_STATUS: Record<Importacao["status"], string> = {
   falhou: "Falhou",
 };
 
-const COR_STATUS: Record<Importacao["status"], string> = {
-  processando: "bg-slate-100 text-slate-700",
-  concluida: "bg-green-100 text-green-700",
-  concluida_com_erros: "bg-amber-100 text-amber-700",
-  falhou: "bg-red-100 text-red-700",
+const COR_BORDA_STATUS: Record<Importacao["status"], string> = {
+  processando: "border-l-slate-300",
+  concluida: "border-l-green-400",
+  concluida_com_erros: "border-l-amber-400",
+  falhou: "border-l-red-400",
 };
 
 export default function UploadPage() {
   const [arquivo, setArquivo] = useState<File | null>(null);
   const [estado, setEstado] = useState<Estado>({ status: "ocioso" });
+  const [arrastando, setArrastando] = useState(false);
   const [ultimaImportacao, setUltimaImportacao] = useState<EstadoUltimaImportacao>({
     status: "carregando",
   });
+  const inputRef = useRef<HTMLInputElement>(null);
 
   async function carregarUltimaImportacao() {
     const id = obterUltimaImportacaoId();
@@ -98,62 +101,88 @@ export default function UploadPage() {
         Envie o CSV exportado do ERP para calcular custo gerencial, giro e desconto máximo por produto.
       </p>
 
-      <details className="mt-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-md">
-        <summary className="cursor-pointer text-sm font-medium text-slate-700">
-          Ver formato esperado do CSV
-        </summary>
+      <div className="mt-4 grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-md">
+          <h2 className="text-sm font-semibold text-slate-800">Formato esperado do CSV</h2>
 
-        <div className="mt-4 space-y-3 text-sm text-slate-600">
-          <p>
-            <span className="font-medium text-slate-700">Delimitador:</span> ponto e vírgula (
-            <code className="rounded bg-slate-100 px-1 py-0.5 text-xs">;</code>)
-          </p>
-          <p>
-            <span className="font-medium text-slate-700">Datas:</span> formato dd/mm/aaaa (ex:
-            02/10/2025)
-          </p>
-          <p>
-            <span className="font-medium text-slate-700">Valores monetários:</span> em R$ com vírgula
-            decimal (ex: R$ 18,50)
-          </p>
-          <div>
-            <p className="font-medium text-slate-700">Colunas esperadas:</p>
-            <ul className="mt-2 flex flex-wrap gap-1.5">
-              {COLUNAS_ESPERADAS.map((coluna) => (
-                <li key={coluna} className="rounded-md bg-slate-100 px-2 py-1 font-mono text-xs text-slate-600">
-                  {coluna}
-                </li>
-              ))}
-            </ul>
+          <div className="mt-4 space-y-3 text-sm text-slate-600">
+            <p>
+              <span className="font-medium text-slate-700">Delimitador:</span> ponto e vírgula (
+              <code className="rounded bg-slate-100 px-1 py-0.5 text-xs">;</code>)
+            </p>
+            <p>
+              <span className="font-medium text-slate-700">Datas:</span> formato dd/mm/aaaa (ex:
+              02/10/2025)
+            </p>
+            <p>
+              <span className="font-medium text-slate-700">Valores monetários:</span> em R$ com vírgula
+              decimal (ex: R$ 18,50)
+            </p>
+            <div>
+              <p className="font-medium text-slate-700">Colunas esperadas:</p>
+              <ul className="mt-2 flex flex-wrap gap-1.5">
+                {COLUNAS_ESPERADAS.map((coluna) => (
+                  <li key={coluna} className="rounded-md bg-slate-100 px-2 py-1 font-mono text-xs text-slate-600">
+                    {coluna}
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
         </div>
-      </details>
 
-      <form
-        onSubmit={handleSubmit}
-        className="mt-6 flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-md"
-      >
-        <UploadCloud className="text-slate-400" size={22} />
-        <div className="flex-1">
-          <label htmlFor="arquivo-csv" className="block text-sm font-medium text-slate-700">
+        <form
+          onSubmit={handleSubmit}
+          className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-md"
+        >
+          <label htmlFor="arquivo-csv" className="sr-only">
             Arquivo CSV do ERP
           </label>
-          <input
-            id="arquivo-csv"
-            type="file"
-            accept=".csv"
-            onChange={(evento) => setArquivo(evento.target.files?.[0] ?? null)}
-            className="mt-1 block w-full text-sm text-slate-600 file:mr-3 file:rounded-md file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-slate-700 hover:file:bg-slate-200"
-          />
-        </div>
-        <button
-          type="submit"
-          disabled={!arquivo || estado.status === "enviando"}
-          className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300"
-        >
-          {estado.status === "enviando" ? "Importando..." : "Importar"}
-        </button>
-      </form>
+          <div
+            onClick={() => inputRef.current?.click()}
+            onDragOver={(evento) => {
+              evento.preventDefault();
+              setArrastando(true);
+            }}
+            onDragLeave={() => setArrastando(false)}
+            onDrop={(evento) => {
+              evento.preventDefault();
+              setArrastando(false);
+              const arquivoSolto = evento.dataTransfer.files?.[0];
+              if (arquivoSolto) setArquivo(arquivoSolto);
+            }}
+            className={`flex flex-1 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-6 py-8 text-center transition-colors ${
+              arrastando ? "border-blue-400 bg-blue-50" : "border-slate-300 hover:border-slate-400"
+            }`}
+          >
+            <UploadCloud className="text-slate-400" size={32} />
+            <span className="text-sm font-medium text-slate-700">
+              Arraste o arquivo aqui ou clique para escolher
+            </span>
+            <span className="text-xs text-slate-500">
+              {arquivo ? arquivo.name : "Nenhum arquivo selecionado"}
+            </span>
+            <input
+              ref={inputRef}
+              id="arquivo-csv"
+              type="file"
+              accept=".csv"
+              onChange={(evento) => setArquivo(evento.target.files?.[0] ?? null)}
+              className="sr-only"
+            />
+          </div>
+
+          <div className="mt-4 flex justify-center">
+            <button
+              type="submit"
+              disabled={!arquivo || estado.status === "enviando"}
+              className="rounded-lg bg-blue-600 px-6 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+            >
+              {estado.status === "enviando" ? "Importando..." : "Importar"}
+            </button>
+          </div>
+        </form>
+      </div>
 
       {estado.status === "erro" && (
         <p role="alert" className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -201,7 +230,7 @@ export default function UploadPage() {
       )}
 
       {estado.status !== "concluido" && (
-        <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-md">
+        <div className="mt-6">
           <h2 className="text-sm font-semibold text-slate-800">Última importação</h2>
 
           {ultimaImportacao.status === "carregando" && (
@@ -219,33 +248,18 @@ export default function UploadPage() {
           )}
 
           {ultimaImportacao.status === "sucesso" && (
-            <div className="mt-3 flex flex-wrap items-center gap-x-8 gap-y-3">
-              <div>
-                <p className="text-xs uppercase tracking-wide text-slate-500">Data/hora</p>
-                <p className="text-sm font-medium text-slate-800">
-                  {formatarDataHora(ultimaImportacao.importacao.iniciada_em)}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs uppercase tracking-wide text-slate-500">Importadas</p>
-                <p className="text-sm font-medium text-slate-800">
-                  {ultimaImportacao.importacao.linhas_importadas}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs uppercase tracking-wide text-slate-500">Com erro</p>
-                <p className="text-sm font-medium text-slate-800">
-                  {ultimaImportacao.importacao.linhas_com_erro}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs uppercase tracking-wide text-slate-500">Status</p>
-                <span
-                  className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${COR_STATUS[ultimaImportacao.importacao.status]}`}
-                >
-                  {LABEL_STATUS[ultimaImportacao.importacao.status]}
-                </span>
-              </div>
+            <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <KpiCard
+                label="Data/hora"
+                valor={formatarDataHora(ultimaImportacao.importacao.iniciada_em)}
+              />
+              <KpiCard label="Importadas" valor={String(ultimaImportacao.importacao.linhas_importadas)} />
+              <KpiCard label="Com erro" valor={String(ultimaImportacao.importacao.linhas_com_erro)} />
+              <KpiCard
+                label="Status"
+                valor={LABEL_STATUS[ultimaImportacao.importacao.status]}
+                corBorda={COR_BORDA_STATUS[ultimaImportacao.importacao.status]}
+              />
             </div>
           )}
         </div>

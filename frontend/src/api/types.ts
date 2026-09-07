@@ -42,6 +42,7 @@ export interface ResultadoAnalise {
   score_prioridade: number;
   desconto_maximo_percentual: number | null;
   desconto_maximo_valor: number | null;
+  dias_em_estoque: number;
 }
 
 export interface ResultadoImportacaoLinha {
