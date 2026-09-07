@@ -51,6 +51,13 @@ const COR_BORDA_STATUS: Record<Importacao["status"], string> = {
   falhou: "border-l-red-400",
 };
 
+const COR_TEXTO_STATUS: Record<Importacao["status"], string> = {
+  processando: "text-slate-600",
+  concluida: "text-green-700",
+  concluida_com_erros: "text-amber-700",
+  falhou: "text-red-700",
+};
+
 export default function UploadPage() {
   const [arquivo, setArquivo] = useState<File | null>(null);
   const [estado, setEstado] = useState<Estado>({ status: "ocioso" });
@@ -252,13 +259,24 @@ export default function UploadPage() {
               <KpiCard
                 label="Data/hora"
                 valor={formatarDataHora(ultimaImportacao.importacao.iniciada_em)}
+                tamanhoValor="pequeno"
               />
-              <KpiCard label="Importadas" valor={String(ultimaImportacao.importacao.linhas_importadas)} />
-              <KpiCard label="Com erro" valor={String(ultimaImportacao.importacao.linhas_com_erro)} />
+              <KpiCard
+                label="Importadas"
+                valor={String(ultimaImportacao.importacao.linhas_importadas)}
+                tamanhoValor="pequeno"
+              />
+              <KpiCard
+                label="Com erro"
+                valor={String(ultimaImportacao.importacao.linhas_com_erro)}
+                tamanhoValor="pequeno"
+              />
               <KpiCard
                 label="Status"
                 valor={LABEL_STATUS[ultimaImportacao.importacao.status]}
                 corBorda={COR_BORDA_STATUS[ultimaImportacao.importacao.status]}
+                corValor={COR_TEXTO_STATUS[ultimaImportacao.importacao.status]}
+                tamanhoValor="pequeno"
               />
             </div>
           )}

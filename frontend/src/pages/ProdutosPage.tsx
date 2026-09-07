@@ -220,7 +220,7 @@ export default function ProdutosPage() {
         <div className="overflow-x-auto">
         <table className="w-full min-w-[960px] table-fixed text-sm">
           <thead>
-            <tr className="text-left text-xs font-medium tracking-wide text-slate-500 uppercase">
+            <tr className="text-left text-xs font-medium tracking-wide text-slate-600 uppercase">
               <th className="w-[18%] px-4 py-3">Nome</th>
               <th className="w-[10%] px-4 py-3">Categoria</th>
               <th className="w-[11%] px-4 py-3" aria-sort={ariaSort("custo_gerencial_composto")}>
@@ -228,7 +228,7 @@ export default function ProdutosPage() {
                   <button
                     type="button"
                     onClick={() => alternarOrdenacao("custo_gerencial_composto")}
-                    className="flex items-center gap-1 tracking-wide text-slate-500 uppercase hover:text-slate-700"
+                    className="flex items-center gap-1 tracking-wide text-slate-600 uppercase hover:text-slate-700"
                   >
                     Custo gerencial
                     {iconeOrdenacao("custo_gerencial_composto")}
@@ -242,7 +242,7 @@ export default function ProdutosPage() {
                   <button
                     type="button"
                     onClick={() => alternarOrdenacao("giro_90d")}
-                    className="flex items-center gap-1 tracking-wide text-slate-500 uppercase hover:text-slate-700"
+                    className="flex items-center gap-1 tracking-wide text-slate-600 uppercase hover:text-slate-700"
                   >
                     Giro (90d)
                     {iconeOrdenacao("giro_90d")}
@@ -264,7 +264,7 @@ export default function ProdutosPage() {
                   <button
                     type="button"
                     onClick={() => alternarOrdenacao("desconto_maximo_percentual")}
-                    className="flex items-center gap-1 tracking-wide text-slate-500 uppercase hover:text-slate-700"
+                    className="flex items-center gap-1 tracking-wide text-slate-600 uppercase hover:text-slate-700"
                   >
                     Desconto máximo sugerido (%)
                     {iconeOrdenacao("desconto_maximo_percentual")}
@@ -280,7 +280,7 @@ export default function ProdutosPage() {
                   <button
                     type="button"
                     onClick={() => alternarOrdenacao("desconto_maximo_valor")}
-                    className="flex items-center gap-1 tracking-wide text-slate-500 uppercase hover:text-slate-700"
+                    className="flex items-center gap-1 tracking-wide text-slate-600 uppercase hover:text-slate-700"
                   >
                     Desconto máximo sugerido (R$)
                     {iconeOrdenacao("desconto_maximo_valor")}
@@ -308,12 +308,12 @@ export default function ProdutosPage() {
                 <td className="px-4 py-3">
                   <ClassificacaoBadge classificacao={linha.classificacao} />
                 </td>
-                <td className="px-4 py-3 text-slate-600">
+                <td className="px-4 py-3 font-semibold text-slate-800">
                   {linha.desconto_maximo_percentual != null
                     ? `${formatarNumero(linha.desconto_maximo_percentual)}%`
                     : "-"}
                 </td>
-                <td className="px-4 py-3 text-slate-600">
+                <td className="px-4 py-3 font-semibold text-slate-800">
                   {linha.desconto_maximo_valor != null ? formatarMoeda(linha.desconto_maximo_valor) : "-"}
                 </td>
               </tr>
