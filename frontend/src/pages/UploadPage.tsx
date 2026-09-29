@@ -19,16 +19,21 @@ type EstadoUltimaImportacao =
   | { status: "erro"; mensagem: string }
   | { status: "sucesso"; importacao: Importacao };
 
-const COLUNAS_ESPERADAS = [
+// Espelha COLUNAS_OBRIGATORIAS em backend/app/services/csv_import.py — não há
+// endpoint que exponha isso, então precisa manter as duas listas em sincronia.
+const COLUNAS_OBRIGATORIAS = [
   "codigo_produto",
   "nome_produto",
+  "data_entrada_estoque",
+  "quantidade_estoque_atual",
+  "custo_aquisicao_unitario",
+];
+
+const COLUNAS_OPCIONAIS = [
   "categoria",
   "fornecedor",
-  "data_entrada_estoque",
   "data_ultima_venda",
-  "quantidade_estoque_atual",
   "estoque_minimo",
-  "custo_aquisicao_unitario",
   "preco_venda_unitario",
   "qtd_vendida_30d",
   "qtd_vendida_90d",
@@ -126,9 +131,22 @@ export default function UploadPage() {
               decimal (ex: R$ 18,50)
             </p>
             <div>
-              <p className="font-medium text-slate-700">Colunas esperadas:</p>
+              <p className="text-xs font-medium tracking-wide text-slate-500 uppercase">Obrigatórias</p>
               <ul className="mt-2 flex flex-wrap gap-1.5">
-                {COLUNAS_ESPERADAS.map((coluna) => (
+                {COLUNAS_OBRIGATORIAS.map((coluna) => (
+                  <li
+                    key={coluna}
+                    className="rounded-md border border-blue-200 bg-blue-50 px-2 py-1 font-mono text-xs text-blue-700"
+                  >
+                    {coluna}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <p className="text-xs font-medium tracking-wide text-slate-500 uppercase">Opcionais</p>
+              <ul className="mt-2 flex flex-wrap gap-1.5">
+                {COLUNAS_OPCIONAIS.map((coluna) => (
                   <li key={coluna} className="rounded-md bg-slate-100 px-2 py-1 font-mono text-xs text-slate-600">
                     {coluna}
                   </li>
