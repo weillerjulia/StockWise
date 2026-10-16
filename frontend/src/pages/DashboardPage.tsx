@@ -105,7 +105,8 @@ export default function DashboardPage() {
   }
   const dadosPorCategoria = [...valorPorCategoria.entries()]
     .map(([categoria, valor]) => ({ categoria, valor }))
-    .sort((a, b) => b.valor - a.valor);
+    .sort((a, b) => b.valor - a.valor)
+    .slice(0, 10);
 
   const maiorValorCategoria = Math.max(...dadosPorCategoria.map((item) => item.valor), 1);
 
@@ -187,7 +188,7 @@ export default function DashboardPage() {
       </div>
 
       <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-md">
-        <h2 className="text-sm font-semibold text-slate-800">Valor imobilizado por categoria (R$)</h2>
+        <h2 className="text-sm font-semibold text-slate-800">Top 10 categorias por valor imobilizado (R$)</h2>
         <ResponsiveContainer width="100%" height={Math.max(300, dadosPorCategoria.length * 36)}>
           <BarChart data={dadosPorCategoria} layout="vertical" margin={{ left: 24 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />

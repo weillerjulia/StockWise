@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronUp, Download, Search } from "lucide-react";
+import { ChevronDown, ChevronsUpDown, ChevronUp, Download, Search } from "lucide-react";
 import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
@@ -101,8 +101,16 @@ export default function ProdutosPage() {
   function iconeOrdenacao(chave: ChaveOrdenacao): ReactNode {
     const ativo = ordenacao?.chave === chave;
     return (
-      <span className="inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center">
-        {ativo && (ordenacao.direcao === "asc" ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}
+      <span className="inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center text-slate-400">
+        {ativo ? (
+          ordenacao.direcao === "asc" ? (
+            <ChevronUp size={14} className="text-slate-700" />
+          ) : (
+            <ChevronDown size={14} className="text-slate-700" />
+          )
+        ) : (
+          <ChevronsUpDown size={13} />
+        )}
       </span>
     );
   }
