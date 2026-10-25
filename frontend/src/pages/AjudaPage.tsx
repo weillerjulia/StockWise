@@ -73,25 +73,59 @@ export default function AjudaPage() {
       <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-md">
         <h2 className="text-sm font-semibold text-slate-800">Classificação (Prioridade Alta/Média/Baixa)</h2>
         <p className="mt-3 text-sm text-slate-600">
-          É um score relativo de 0 a 1 que combina três fatores com peso igual (custo gerencial,
-          giro e nível de estoque), cada um comparado com os demais produtos do mesmo lote
-          importado (posição relativa, não um valor absoluto). O giro entra invertido na fórmula,
-          porque giro baixo (produto parado) é o que deve aumentar a prioridade de ação.
+          É um score relativo de 0 a 1 que combina três fatores (custo gerencial, giro e nível de
+          estoque), cada um comparado com os demais produtos do mesmo lote importado (posição
+          relativa, não um valor absoluto). Custo e giro são os fatores principais (40% cada); o
+          nível de estoque é um critério secundário (20%), já que o giro também mede o estoque em
+          relação às vendas. O giro entra invertido na fórmula, porque giro baixo (produto parado)
+          é o que deve aumentar a prioridade de ação.
         </p>
         <BlocoFormula>
           {"Posição no custo, Posição no giro, Posição no estoque = ranking do produto (de 0 a 1)\n" +
             "  comparado aos demais produtos do mesmo lote, considerando custo gerencial,\n" +
             "  giro (90 dias) e nível de estoque (estoque atual / estoque mínimo)\n\n" +
-            "Pontuação de prioridade = (Posição no custo + (1 − Posição no giro) + Posição no estoque) / 3"}
+            "Pontuação de prioridade = 0,4 × Posição no custo + 0,4 × (1 − Posição no giro)\n" +
+            "                          + 0,2 × Posição no estoque"}
         </BlocoFormula>
         <p className="mt-3 text-sm text-slate-600">
           Limiares: score ≥ 0,67 → Prioridade Alta · entre 0,34 e 0,67 → Prioridade Média · abaixo
           de 0,34 → Prioridade Baixa.
         </p>
         <p className="mt-3 text-sm text-slate-600">
-          Exemplo: um produto caro, parado (giro baixo) e com estoque bem acima do mínimo tende a
-          ficar perto do topo do rank nas três dimensões, resultando em score próximo de 1 →
-          Prioridade Alta.
+          Exemplo: um produto caro e parado (giro baixo) fica no topo do rank de custo e de giro e
+          soma 0,8 só com esses dois fatores → Prioridade Alta, mesmo que tenha pouco estoque em
+          relação ao mínimo. Se além disso o estoque estiver bem acima do mínimo, o score chega
+          perto de 1.
+        </p>
+      </div>
+
+      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-md">
+        <h2 className="text-sm font-semibold text-slate-800">Como a classificação foi validada</h2>
+        <p className="mt-3 text-sm text-slate-600">
+          A classificação é uma regra definida por nós (pesos e limiares). Para conferir se ela
+          reflete os padrões reais do estoque, usamos o K-Means, um algoritmo de aprendizado de
+          máquina que separa os produtos em 3 grupos sozinho, olhando só para custo, giro e nível de
+          estoque, sem conhecer a regra. Depois comparamos produto a produto: se o grupo do K-Means e
+          a classificação coincidem, a regra está capturando um padrão que existe nos dados.
+        </p>
+        <ul className="mt-3 space-y-2 text-sm text-slate-600">
+          <li>
+            <span className="font-semibold text-slate-800">Primeira versão (pesos iguais, 1/3 cada):</span>{" "}
+            concordância de só 46%. O K-Means mostrou que peças caras e paradas costumam ter estoque
+            próximo do mínimo, e esse fator anulava os outros dois: 48 de 56 produtos caíam em
+            Prioridade Média.
+          </li>
+          <li>
+            <span className="font-semibold text-slate-800">Versão atual (40% custo, 40% giro, 20% estoque):</span>{" "}
+            concordância de 82%, com os produtos distribuídos entre Alta (13), Média (28) e Baixa (15).
+          </li>
+        </ul>
+        <p className="mt-3 text-sm text-slate-600">
+          As divergências restantes são produtos com pontuação perto dos limiares (0,34 e 0,67) ou
+          casos em que a regra é mais adequada — por exemplo, um produto caro, parado e com muito
+          estoque, que a regra corretamente coloca em Prioridade Alta. Números da base de exemplo
+          usada no desenvolvimento; a análise completa está no notebook{" "}
+          <code className="rounded bg-slate-100 px-1 py-0.5 text-xs">backend/analysis/clustering_kmeans.ipynb</code>.
         </p>
       </div>
 

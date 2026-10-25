@@ -42,22 +42,22 @@ Cálculo de um indicador único por produto, integrando custo de aquisição, cu
 Giro de estoque anualizado em três janelas (30, 90 e 180 dias), permitindo comparar o desempenho recente com o de médio prazo.
 
 **Classificação multidimensional de produtos:**
-Score relativo ao lote importado que combina custo gerencial, giro e nível de estoque, classificando cada produto em Prioridade Alta, Média ou Baixa.
+Score relativo ao lote importado que combina custo gerencial (40%), giro (40%) e nível de estoque (20%), classificando cada produto em Prioridade Alta, Média ou Baixa.
 
 **Desconto máximo sugerido:**
 A partir do custo gerencial, o sistema calcula o maior desconto (em % e em R$) aplicável a cada produto sem perder uma margem mínima de 10%.
 
 **Dashboard (Visão geral):**
-Resumo em texto dos produtos críticos, 8 indicadores com explicação em tooltip, gráfico de produtos por classificação, top 10 categorias por valor imobilizado e listas dos 5 produtos com maior custo gerencial e dos 5 parados há mais tempo.
+Resumo em texto dos produtos críticos, 8 indicadores com explicação em tooltip, gráfico de produtos por classificação, mapa de prioridade (dispersão giro × custo gerencial, com o quadrante "parado e caro" em destaque), top 10 categorias por valor imobilizado e listas dos 5 produtos com maior custo gerencial e dos 5 parados há mais tempo.
 
 **Tabela de produtos:**
 Busca por nome ou código, filtro por classificação, ordenação por custo gerencial, giro e desconto máximo (% e R$), paginação (10, 25, 50 ou 100 itens por página), tooltips explicando cada métrica e exportação da lista filtrada para CSV compatível com Excel.
 
 **Página de ajuda:**
-Passo a passo de uso e explicação das fórmulas (custo gerencial, giro, classificação e desconto máximo), com exemplos numéricos.
+Passo a passo de uso e explicação das fórmulas (custo gerencial, giro, classificação e desconto máximo), com exemplos numéricos, e resumo de como a classificação foi validada com K-Means.
 
 **Modelagem analítica e aprendizado de máquina:**
-Notebook de análise exploratória com K-Means (scikit-learn) sobre os resultados já calculados, usado para validar a classificação por regras.
+Notebook de análise exploratória com K-Means (scikit-learn) sobre os resultados já calculados, usado para validar a classificação por regras. Foi essa análise que levou ao ajuste dos pesos da classificação (40% custo, 40% giro, 20% estoque), elevando a concordância entre regra e K-Means de 46% para 82%; o resumo da validação aparece na página de Ajuda.
 
 O sistema é aberto: não há login nem cadastro de usuários.
 
@@ -125,7 +125,7 @@ O frontend nunca fala com o Supabase diretamente — só com a API FastAPI, que
 
 **Análise exploratória de dados**
 - Jupyter Notebook
-- pandas, scikit-learn (K-Means, StandardScaler, silhouette score)
+- pandas, scikit-learn (K-Means, silhouette score)
 - matplotlib (visualização)
 - python-dotenv (leitura das credenciais do `.env`)
 
@@ -165,9 +165,12 @@ Acesse `http://localhost:5173`. Testes: `npm run test` (Vitest).
 
 ### Análise exploratória (K-Means)
 
-Notebook standalone em `backend/analysis/clustering_kmeans.ipynb` — agrupa os
-produtos já calculados (custo gerencial, giro, score de prioridade) via
-K-Means, pra comparar com a classificação por regras do módulo 4.
+Notebook standalone em `backend/analysis/clustering_kmeans.ipynb` — agrupa via
+K-Means os produtos de uma importação (por padrão, a mais recente), usando as
+mesmas 3 dimensões e a mesma normalização por rank do módulo 4 (custo
+gerencial, giro 90d e nível de estoque), e compara produto a produto com a
+classificação por regras: percentual de concordância e lista dos produtos
+em que os dois métodos divergem.
 
 ```bash
 cd backend

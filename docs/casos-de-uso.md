@@ -200,10 +200,16 @@ salvo no `localStorage`.
      produtos que têm giro calculado.
 5. Tela exibe um gráfico de barras com a quantidade de produtos por
    classificação (Alta/Média/Baixa).
-6. Tela exibe um gráfico de barras horizontais com as 10 categorias de
+6. Tela exibe o mapa de prioridade: um gráfico de dispersão em que cada
+   produto é um ponto (giro 90d no eixo horizontal, custo gerencial no
+   vertical), com cor e formato do marcador pela classificação. Linhas
+   tracejadas marcam a mediana do lote e o quadrante "Parado e caro"
+   (giro abaixo e custo acima da mediana) fica destacado. Ao passar o
+   mouse, um tooltip mostra nome, classificação, custo e giro do produto.
+7. Tela exibe um gráfico de barras horizontais com as 10 categorias de
    maior valor imobilizado (soma do custo gerencial), com cor mais forte
    para os maiores valores.
-7. Tela exibe duas listas: os 5 produtos com maior custo gerencial e os 5
+8. Tela exibe duas listas: os 5 produtos com maior custo gerencial e os 5
    produtos parados há mais tempo (em dias de estoque).
 
 **Fluxos alternativos / erro:**
@@ -214,7 +220,10 @@ salvo no `localStorage`.
   "Nenhum produto em prioridade alta neste momento — estoque saudável.";
   o valor imobilizado crítico é R$ 0,00 e a barra correspondente do
   gráfico fica zerada.
-- **Nenhum produto com giro calculado**: o card de giro médio exibe "-".
+- **Nenhum produto com giro calculado**: o card de giro médio exibe "-" e
+  o mapa de prioridade não é exibido.
+- **Produto com estoque zerado** (giro indefinido): fica fora do mapa de
+  prioridade, e o texto do card informa quantos produtos foram omitidos.
 - **Produto sem categoria**: entra no gráfico de categorias como
   "Sem categoria".
 
@@ -231,3 +240,6 @@ salvo no `localStorage`.
 3. Tela explica, com fórmula e exemplo numérico, o custo gerencial
    composto, o giro de estoque (90 dias), a classificação de prioridade e
    o desconto máximo sugerido.
+4. Tela explica como a classificação foi validada com K-Means
+   (concordância entre a regra e os agrupamentos do algoritmo, antes e
+   depois do ajuste de pesos).

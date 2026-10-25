@@ -35,7 +35,7 @@ O StockWise responde a essas três perguntas calculando, para cada produto:
 2. **Giro de estoque** em três janelas temporais (30, 90, 180 dias),
    anualizado para permitir comparação entre elas.
 3. **Classificação de prioridade** (Alta/Média/Baixa), um ranking relativo
-   que combina custo, giro e nível de estoque.
+   que combina custo (40%), giro (40%) e nível de estoque (20%).
 4. **Desconto máximo sugerido**, o maior desconto que pode ser aplicado ao
    preço de venda sem violar uma margem mínima de segurança.
 
@@ -58,7 +58,7 @@ O StockWise responde a essas três perguntas calculando, para cada produto:
 - `vitest` + `@testing-library/react` — testes de componentes
 
 **Análise exploratória** (isolada, fora do fluxo web)
-- Jupyter Notebook, `pandas`, `scikit-learn` (K-Means, `StandardScaler`,
+- Jupyter Notebook, `pandas`, `scikit-learn` (K-Means,
   silhouette score), `matplotlib`, `python-dotenv`
 
 **Banco de dados**
@@ -149,6 +149,7 @@ StockWise/
 │       │   ├── layout/            # AppLayout, Sidebar, Topbar (casca da aplicação)
 │       │   ├── KpiCard.tsx        # card de indicador numérico
 │       │   ├── ClassificacaoBadge.tsx  # pílula colorida por classificação
+│       │   ├── MapaPrioridadeChart.tsx # dispersão giro × custo gerencial do Dashboard
 │       │   ├── HelpTooltip.tsx    # tooltip de ajuda inline nas colunas da tabela
 │       │   └── Pagination.tsx     # paginação client-side da tabela de produtos
 │       └── utils/
@@ -412,7 +413,7 @@ Essa separação existe para que os cálculos sejam testáveis isoladamente
 | 1 — Importação | [`csv_import.py`](../backend/app/services/csv_import.py) | Decodifica o arquivo (fallback UTF-8 → CP1252 → Mac Roman), detecta delimitador (`csv.Sniffer`), faz parsing de datas/moeda/percentual/inteiro e valida linha a linha |
 | 2 — Custo gerencial | [`custo_gerencial.py`](../backend/app/services/custo_gerencial.py) | Calcula custo de armazenagem + custo de oportunidade + custo de aquisição, proporcionais aos dias em estoque |
 | 3 — Giro de estoque | [`giro_estoque.py`](../backend/app/services/giro_estoque.py) | Calcula o giro anualizado nas janelas de 30/90/180 dias |
-| 4 — Classificação | [`classificacao_estoque.py`](../backend/app/services/classificacao_estoque.py) | Rankeia cada produto (custo, giro, nível de estoque) **relativo ao lote da importação** e converte em Prioridade Alta/Média/Baixa |
+| 4 — Classificação | [`classificacao_estoque.py`](../backend/app/services/classificacao_estoque.py) | Rankeia cada produto (custo, giro, nível de estoque) **relativo ao lote da importação**, combina os ranks com pesos 40/40/20 e converte em Prioridade Alta/Média/Baixa |
 | 5 — Desconto máximo | [`desconto_maximo.py`](../backend/app/services/desconto_maximo.py) | Calcula o maior desconto aplicável sem violar a margem mínima (10% por padrão) |
 | 6 — Repositório | [`importacoes_repository.py`](../backend/app/services/importacoes_repository.py) | Único módulo que chama `get_supabase_client()` — cria/atualiza importações, faz upsert de produtos, insere snapshots e resultados |
 
@@ -487,9 +488,9 @@ conteúdo):
 | Rota | Página | O que faz |
 |---|---|---|
 | `/` | [`UploadPage.tsx`](../frontend/src/pages/UploadPage.tsx) | Formulário de upload do CSV (drag-and-drop ou clique), mostra o formato esperado, o resumo pós-upload (linhas totais/importadas/com erro + tabela de erros por linha) e um resumo da última importação salva |
-| `/dashboard` | [`DashboardPage.tsx`](../frontend/src/pages/DashboardPage.tsx) | KPIs agregados (valor imobilizado total/crítico, potencial de recuperação, risco de ruptura, giro médio), gráfico de barras por classificação, gráfico de valor imobilizado por categoria, top 5 por custo e top 5 parados há mais tempo |
+| `/dashboard` | [`DashboardPage.tsx`](../frontend/src/pages/DashboardPage.tsx) | KPIs agregados (valor imobilizado total/crítico, potencial de recuperação, risco de ruptura, giro médio), gráfico de barras por classificação, mapa de prioridade (dispersão giro × custo), gráfico de valor imobilizado por categoria, top 5 por custo e top 5 parados há mais tempo |
 | `/produtos` | [`ProdutosPage.tsx`](../frontend/src/pages/ProdutosPage.tsx) | Tabela paginada de produtos com busca por nome/código, filtro por classificação, ordenação por coluna (custo, giro, desconto) e exportação para CSV |
-| `/ajuda` | [`AjudaPage.tsx`](../frontend/src/pages/AjudaPage.tsx) | Explicação didática (com fórmulas e exemplos numéricos) de cada indicador calculado pelo backend |
+| `/ajuda` | [`AjudaPage.tsx`](../frontend/src/pages/AjudaPage.tsx) | Explicação didática (com fórmulas e exemplos numéricos) de cada indicador calculado pelo backend e resumo da validação da classificação com K-Means |
 
 Componentes reutilizáveis (`frontend/src/components/`):
 - **`AppLayout` / `Sidebar` / `Topbar`** — casca visual comum a todas as
@@ -501,6 +502,11 @@ Componentes reutilizáveis (`frontend/src/components/`):
 - **`HelpTooltip`** — ícone de ajuda com texto explicativo, usado nos
   cabeçalhos de coluna da tabela de Produtos.
 - **`Pagination`** — controle de paginação client-side.
+- **`MapaPrioridadeChart`** — gráfico de dispersão (giro 90d × custo
+  gerencial) do Dashboard, um ponto por produto. A classificação é
+  codificada por cor **e** formato do marcador (triângulo/losango/círculo),
+  para não depender só de vermelho × verde; linhas de mediana do lote e o
+  quadrante "Parado e caro" destacado. Produtos com giro nulo ficam de fora.
 
 ### 5.2 Como o frontend se comunica com o backend
 

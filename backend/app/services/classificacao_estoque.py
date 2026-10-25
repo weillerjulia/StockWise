@@ -7,6 +7,15 @@ LIMIAR_PRIORIDADE_ALTA = Decimal("0.67")
 LIMIAR_PRIORIDADE_MEDIA = Decimal("0.34")
 QUATRO_CASAS = Decimal("0.0001")
 
+# Custo e giro são as dimensões principais. O nível de estoque entra como
+# critério secundário: o giro já mede estoque em relação às vendas, e com peso
+# igual a razão estoque/mínimo (que tende a ser menor justamente nas peças
+# caras e paradas) anulava as outras duas, jogando quase todo o lote em
+# "Prioridade Média" — ver backend/analysis/clustering_kmeans.ipynb.
+PESO_CUSTO = Decimal("0.4")
+PESO_GIRO = Decimal("0.4")
+PESO_ESTOQUE = Decimal("0.2")
+
 
 @dataclass
 class ItemParaClassificar:
@@ -52,7 +61,8 @@ def classificar_lote(itens: list[ItemParaClassificar]) -> list[ResultadoClassifi
     custo gerencial, giro (90d) e nível de estoque relativo ao mínimo — cada
     uma convertida em rank relativo (0 a 1) dentro do próprio lote, já que
     "giro alto" ou "custo alto" só têm sentido em comparação com os demais
-    produtos importados junto.
+    produtos importados junto. O score é a média ponderada dos ranks
+    (40% custo, 40% giro invertido, 20% estoque).
     """
     if not itens:
         return []
@@ -67,7 +77,11 @@ def classificar_lote(itens: list[ItemParaClassificar]) -> list[ResultadoClassifi
 
     resultados = []
     for i in range(len(itens)):
-        score = (rank_custo[i] + (Decimal("1") - rank_giro[i]) + rank_estoque[i]) / Decimal("3")
+        score = (
+            PESO_CUSTO * rank_custo[i]
+            + PESO_GIRO * (Decimal("1") - rank_giro[i])
+            + PESO_ESTOQUE * rank_estoque[i]
+        )
         score = score.quantize(QUATRO_CASAS, rounding=ROUND_HALF_UP)
 
         if score >= LIMIAR_PRIORIDADE_ALTA:

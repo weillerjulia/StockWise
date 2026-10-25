@@ -147,6 +147,15 @@ credenciais do backend. Decisão de escopo: nesta fase o objetivo é validar
 (reforçar ou refinar) a classificação por regras do módulo 4 com um método
 não supervisionado, não expor isso como funcionalidade do produto.
 
+Para a comparação ser justa, o notebook vê os dados como o módulo 4: analisa
+uma importação por vez (a classificação é relativa ao lote), usa as mesmas
+3 dimensões (custo gerencial, giro 90d com nulo = 0, razão estoque/mínimo)
+convertidas no mesmo rank relativo, e **não** usa o `score_prioridade` como
+feature — ele é derivado dessas dimensões e define a classificação, o que
+tornaria a comparação circular. Os clusters são nomeados pela média do
+centróide (mesmo critério do score), permitindo medir a concordância
+produto a produto. Lotes com menos de 10 produtos são recusados.
+
 ### 5.10 Exportação da tabela gerada no navegador
 
 O botão "Exportar Excel" da tela de Produtos gera um CSV no próprio
@@ -169,6 +178,30 @@ Cada métrica da tabela de Produtos e cada indicador do Dashboard tem um
 ícone de ajuda (`HelpTooltip`) com uma explicação curta e um exemplo. A
 página Ajuda (`/ajuda`) traz o passo a passo de uso e as fórmulas completas
 com exemplos numéricos.
+
+### 5.13 Pesos da classificação: 40% custo, 40% giro, 20% estoque
+
+O score de prioridade do módulo 4 era a média simples (1/3 cada) dos ranks
+de custo gerencial, giro invertido e razão estoque/mínimo. O notebook de
+K-Means (seção 5.9) mostrou que, nos dados, a razão de estoque anda na
+direção oposta das outras duas (correlação de Spearman −0,72 com o custo e
++0,66 com o giro): peças caras e paradas costumam ter estoque mais próximo
+do mínimo. Com peso igual, essa dimensão anulava as outras, o score se
+concentrava em torno de 0,5 e 48 de 56 produtos caíam em "Prioridade
+Média" — concordância de só 46% com os grupos do K-Means.
+
+Decisão: custo e giro passam a ter 40% cada e o nível de estoque vira
+critério secundário (20%). Justificativa conceitual: o giro já mede o
+estoque em relação às vendas, então a razão estoque/mínimo dobrava esse
+efeito. Os limiares (0,34 e 0,67) foram mantidos. No mesmo lote, a
+distribuição passou a 13 Alta / 28 Média / 15 Baixa, com concordância de
+cerca de 82% com o K-Means (que agrupa sem conhecer os pesos).
+Descartado: cortar por percentil, que forçaria sempre haver produtos em
+"Prioridade Alta" mesmo num estoque saudável.
+
+Importações já gravadas mantêm o score antigo — a classificação é
+calculada no upload, então é preciso reimportar o CSV.
+
 ## 6. Limitações conhecidas do PoC
 
 - Sem autenticação/autorização (decisão de escopo, ver 5.11) — qualquer

@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 import KpiCard from "../components/KpiCard";
+import MapaPrioridadeChart, { type PontoMapaPrioridade } from "../components/MapaPrioridadeChart";
 import type { Classificacao, ResultadoAnalise } from "../api/types";
 import { useResultadosUltimaImportacao } from "../hooks/useResultadosUltimaImportacao";
 import { formatarMoeda, formatarNumero } from "../utils/format";
@@ -71,6 +72,19 @@ export default function DashboardPage() {
       };
     })
     .filter((item): item is NonNullable<typeof item> => item != null);
+
+  const pontosMapaPrioridade: PontoMapaPrioridade[] = estado.dados.flatMap((linha) => {
+    const resultado = linha.resultados_analise;
+    if (!resultado || resultado.giro_90d == null) return [];
+    return [
+      {
+        nome_produto: linha.produtos.nome_produto,
+        classificacao: resultado.classificacao,
+        custo_gerencial_composto: resultado.custo_gerencial_composto,
+        giro_90d: resultado.giro_90d,
+      },
+    ];
+  });
 
   const contagemPorClassificacao = Object.fromEntries(
     ORDEM_CLASSIFICACAO.map((classificacao) => [
@@ -212,6 +226,11 @@ export default function DashboardPage() {
           </BarChart>
         </ResponsiveContainer>
       </div>
+
+      <MapaPrioridadeChart
+        pontos={pontosMapaPrioridade}
+        semGiro={resultados.length - pontosMapaPrioridade.length}
+      />
 
       <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-md">
         <h2 className="text-sm font-semibold text-slate-800">Top 10 categorias por valor imobilizado (R$)</h2>

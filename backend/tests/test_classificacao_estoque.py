@@ -37,6 +37,43 @@ def test_lote_com_tres_niveis_distintos_de_prioridade():
     assert resultados[2].classificacao == "Prioridade Alta"
 
 
+def test_estoque_tem_peso_menor_que_custo_e_giro():
+    # produto caro e parado, mas com a menor razão de estoque do lote: com pesos
+    # iguais o estoque baixo puxaria o score para 0,6667 (Média); com 40/40/20
+    # custo e giro prevalecem e ele fica em Prioridade Alta.
+    itens = [
+        ItemParaClassificar(  # caro, parado, pouco estoque relativo ao mínimo
+            custo_gerencial_composto=Decimal("900"),
+            giro_90d=Decimal("0"),
+            quantidade_estoque_atual=3,
+            estoque_minimo=2,
+        ),
+        ItemParaClassificar(
+            custo_gerencial_composto=Decimal("150"),
+            giro_90d=Decimal("2"),
+            quantidade_estoque_atual=10,
+            estoque_minimo=4,
+        ),
+        ItemParaClassificar(  # barato, gira bem, muito estoque relativo ao mínimo
+            custo_gerencial_composto=Decimal("20"),
+            giro_90d=Decimal("6"),
+            quantidade_estoque_atual=120,
+            estoque_minimo=30,
+        ),
+    ]
+
+    resultados = classificar_lote(itens)
+
+    assert resultados[0].score_prioridade == Decimal("0.8000")
+    assert resultados[0].classificacao == "Prioridade Alta"
+
+    assert resultados[1].score_prioridade == Decimal("0.5000")
+    assert resultados[1].classificacao == "Prioridade Média"
+
+    assert resultados[2].score_prioridade == Decimal("0.2000")
+    assert resultados[2].classificacao == "Prioridade Baixa"
+
+
 def test_lote_com_um_unico_item_recebe_score_neutro():
     itens = [
         ItemParaClassificar(
