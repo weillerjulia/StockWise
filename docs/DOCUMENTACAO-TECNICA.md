@@ -157,7 +157,7 @@ StockWise/
 │
 └── docs/
     ├── RFC.md              # decisões técnicas e trade-offs
-    ├── casos-de-uso.md     # casos de uso (UC01–UC04)
+    ├── casos-de-uso.md     # casos de uso (UC01–UC07)
     └── DOCUMENTACAO-TECNICA.md  # este documento
 ```
 
@@ -591,7 +591,7 @@ Este é o fluxo central do sistema (UC01 em [`casos-de-uso.md`](casos-de-uso.md)
 
 ### 6.2 Fluxo 2 — Consulta de produtos classificados (dashboard/tabela)
 
-Corresponde aos UC02 e UC04.
+Corresponde aos UC03 e UC06.
 
 1. Usuário acessa `/dashboard` ou `/produtos`.
 2. `useResultadosUltimaImportacao` lê o `id` salvo no `localStorage`
@@ -618,7 +618,7 @@ Corresponde aos UC02 e UC04.
 
 ### 6.3 Fluxo 3 — Cálculo do desconto máximo sugerido (precificação)
 
-Corresponde ao UC03 — ilustra como uma regra de negócio isolada
+Corresponde ao UC04 — ilustra como uma regra de negócio isolada
 (`desconto_maximo.py`) depende do resultado de outra (`custo_gerencial.py`)
 dentro do pipeline do Fluxo 1.
 

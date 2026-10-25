@@ -2,7 +2,7 @@
 
 **Sistema de Apoio à Decisão para Definição de Estratégias Promocionais Baseado no Custo Gerencial de Estoque em Autopeças**
 
-> Status: MVP funcional — upload de CSV, cálculos de custo gerencial/giro/classificação/desconto máximo, dashboard web e análise exploratória com K-Means.
+> Status: MVP funcional — upload de CSV, cálculos de custo gerencial/giro/classificação/desconto máximo, dashboard com indicadores e gráficos, tabela de produtos com busca/filtro/ordenação/paginação/exportação, página de ajuda e análise exploratória com K-Means.
 
 ---
 
@@ -30,28 +30,41 @@ Enquanto ERPs convencionais registram o custo de aquisição, o StockWise agrega
 
 ---
 
-## Funcionalidades Previstas
+## Funcionalidades
 
-**Integração com dados do ERP:**
-Importação de dados operacionais do ERP já utilizado pela empresa.
+**Importação de dados do ERP (CSV):**
+Upload manual de um CSV exportado do ERP, com arrastar-e-soltar. O backend detecta sozinho a codificação (UTF-8, CP1252 ou Mac Roman), o delimitador (`;`, `,` ou tab) e o formato numérico (BR ou US), e valida linha a linha. Linhas com erro são listadas sem impedir a importação das demais.
 
 **Modelo de custo gerencial composto:**
 Cálculo de um indicador único por produto, integrando custo de aquisição, custo de armazenagem, tempo de permanência em estoque e custo de oportunidade do capital investido.
 
 **Indicadores de giro em janelas temporais:**
-Análise do giro de estoque considerando diferentes períodos (30, 60, 90 e 180 dias), permitindo uma visão dinâmica do desempenho dos produtos ao longo do tempo.
+Giro de estoque anualizado em três janelas (30, 90 e 180 dias), permitindo comparar o desempenho recente com o de médio prazo.
 
 **Classificação multidimensional de produtos:**
-Ranqueamento que combina simultaneamente as dimensões de giro, custo gerencial e nível de estoque, organizando os produtos por grau de prioridade para intervenção gerencial.
+Score relativo ao lote importado que combina custo gerencial, giro e nível de estoque, classificando cada produto em Prioridade Alta, Média ou Baixa.
 
-**Estratégias promocionais com limite de desconto:**
-A partir do custo gerencial calculado, o sistema determina o valor máximo de desconto aplicável a cada produto, transformando a identificação de itens parados em uma recomendação promocional economicamente segura.
+**Desconto máximo sugerido:**
+A partir do custo gerencial, o sistema calcula o maior desconto (em % e em R$) aplicável a cada produto sem perder uma margem mínima de 10%.
 
-**Dashboards analíticos interativos:**
-Interface web com painéis para visualização dos indicadores de resultado, permitindo que os gestores acompanhem o desempenho do estoque de forma clara e orientada à decisão.
+**Dashboard (Visão geral):**
+Resumo em texto dos produtos críticos, 8 indicadores com explicação em tooltip, gráfico de produtos por classificação, top 10 categorias por valor imobilizado e listas dos 5 produtos com maior custo gerencial e dos 5 parados há mais tempo.
+
+**Tabela de produtos:**
+Busca por nome ou código, filtro por classificação, ordenação por custo gerencial, giro e desconto máximo (% e R$), paginação (10, 25, 50 ou 100 itens por página), tooltips explicando cada métrica e exportação da lista filtrada para CSV compatível com Excel.
+
+**Página de ajuda:**
+Passo a passo de uso e explicação das fórmulas (custo gerencial, giro, classificação e desconto máximo), com exemplos numéricos.
 
 **Modelagem analítica e aprendizado de máquina:**
-Aplicação de técnicas de análise exploratória e modelos de machine learning (scikit-learn) sobre os dados históricos do ERP, com o objetivo de identificar padrões de desempenho que possam reforçar ou refinar as recomendações geradas pelo sistema.
+Notebook de análise exploratória com K-Means (scikit-learn) sobre os resultados já calculados, usado para validar a classificação por regras.
+
+O sistema é aberto: não há login nem cadastro de usuários.
+
+## Funcionalidades Futuras
+
+- Integração direta com o ERP, sem exportação manual de CSV.
+- Histórico e comparação entre importações.
 
 ---
 
@@ -171,6 +184,8 @@ Lê as credenciais direto do `backend/.env` (mesmo arquivo usado pela API).
 - [`docs/RFC.md`](docs/RFC.md) — contexto, arquitetura e decisões técnicas.
 - [`docs/casos-de-uso.md`](docs/casos-de-uso.md) — casos de uso dos
   principais fluxos do sistema.
+- [`docs/DOCUMENTACAO-TECNICA.md`](docs/DOCUMENTACAO-TECNICA.md) — documentação
+  técnica detalhada (modelo de dados, API e fórmulas).
 
 ---
 

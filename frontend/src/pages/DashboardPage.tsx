@@ -145,10 +145,27 @@ export default function DashboardPage() {
       </p>
 
       <div className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiCard label="Total de produtos" valor={String(resultados.length)} />
-        <KpiCard label="Valor total imobilizado" valor={formatarMoeda(valorTotalImobilizado)} />
-        <KpiCard label="Valor imobilizado (crítico)" valor={formatarMoeda(valorImobilizadoCritico)} />
-        <KpiCard label="Potencial de recuperação" valor={formatarMoeda(potencialRecuperacao)} />
+        <KpiCard
+          label="Total de produtos"
+          valor={String(resultados.length)}
+          ajuda="Quantidade de produtos analisados na última importação."
+        />
+        <KpiCard
+          label="Valor total imobilizado"
+          valor={formatarMoeda(valorTotalImobilizado)}
+          ajuda="Soma do custo gerencial unitário (aquisição + armazenagem + oportunidade) de todos os produtos."
+        />
+        <KpiCard
+          label="Valor imobilizado (crítico)"
+          valor={formatarMoeda(valorImobilizadoCritico)}
+          ajuda="Soma do custo gerencial unitário dos produtos em Prioridade Alta."
+        />
+        <KpiCard
+          label="Potencial de recuperação"
+          valor={formatarMoeda(potencialRecuperacao)}
+          ajuda="Soma do desconto máximo sugerido (R$ por unidade) de todos os produtos, mantendo a margem mínima de 10%."
+          alinharAjuda="direita"
+        />
       </div>
 
       <div className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -157,16 +174,25 @@ export default function DashboardPage() {
           valor={String(contagemPorClassificacao["Prioridade Alta"])}
           corBorda={COR_BORDA_CLASSIFICACAO["Prioridade Alta"]}
           alerta
+          ajuda="Quantidade de produtos parados e caros, que precisam de atenção."
         />
         <KpiCard
           label="Prioridade Média"
           valor={String(contagemPorClassificacao["Prioridade Média"])}
           corBorda={COR_BORDA_CLASSIFICACAO["Prioridade Média"]}
+          ajuda="Quantidade de produtos que merecem acompanhamento."
         />
-        <KpiCard label="Risco de ruptura" valor={String(riscoRuptura)} corBorda="border-l-orange-400" />
+        <KpiCard
+          label="Risco de ruptura"
+          valor={String(riscoRuptura)}
+          corBorda="border-l-orange-400"
+          ajuda="Quantidade de produtos com estoque atual abaixo do estoque mínimo."
+        />
         <KpiCard
           label="Giro médio geral (90d)"
           valor={giroMedioGeral != null ? formatarNumero(giroMedioGeral) : "-"}
+          ajuda="Média do giro de 90 dias de todos os produtos. Ex: 2,26 = em média, o estoque girou pouco mais de 2x."
+          alinharAjuda="direita"
         />
       </div>
 
@@ -190,7 +216,7 @@ export default function DashboardPage() {
       <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-md">
         <h2 className="text-sm font-semibold text-slate-800">Top 10 categorias por valor imobilizado (R$)</h2>
         <ResponsiveContainer width="100%" height={Math.max(300, dadosPorCategoria.length * 36)}>
-          <BarChart data={dadosPorCategoria} layout="vertical" margin={{ left: 24 }}>
+          <BarChart data={dadosPorCategoria} layout="vertical">
             <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
             <XAxis
               type="number"
@@ -198,7 +224,7 @@ export default function DashboardPage() {
               tick={{ fill: "#64748b", fontSize: 12 }}
               tickFormatter={(valor) => formatarMoeda(valor)}
             />
-            <YAxis type="category" dataKey="categoria" tick={{ fill: "#64748b", fontSize: 12 }} width={150} />
+            <YAxis type="category" dataKey="categoria" tick={{ fill: "#64748b", fontSize: 12 }} width={115} />
             <Tooltip formatter={(valor) => formatarMoeda(Number(valor))} />
             <Bar dataKey="valor" radius={[0, 4, 4, 0]}>
               {dadosPorCategoria.map((item) => (

@@ -61,7 +61,12 @@ runtime da API): pandas, scikit-learn, matplotlib, python-dotenv, Jupyter.
    tabelas separadas (ver seção 5).
 5. Frontend guarda o `id` da importação no `localStorage` e consulta
    `GET /importacoes/{id}/resultados` para alimentar as telas de Dashboard e
-   Produtos.
+   Produtos. A tela de Upload usa `GET /importacoes/{id}` para mostrar o
+   resumo da última importação (data/hora, linhas importadas, com erro e
+   status).
+6. Os indicadores do Dashboard (totais, contagens, médias, rankings) e a
+   busca/filtro/ordenação/paginação da tabela de Produtos são calculados no
+   navegador a partir desses resultados — não há endpoints de agregação.
 
 ## 5. Decisões técnicas relevantes
 
@@ -120,15 +125,18 @@ zere a margem do produto mesmo na promoção mais agressiva.
 A API não tem endpoint para listar importações ou obter "a mais recente"
 — o frontend guarda o `id` retornado pelo upload no `localStorage`
 (`stockwise:ultimaImportacaoId`) e o reutiliza nas telas de Dashboard e
-Produtos. Suficiente para o escopo do PoC (uso local, sem autenticação,
-um usuário por vez); não escala para múltiplos usuários/sessões.
+Produtos. Suficiente para o escopo do PoC (uso local, sistema aberto); a
+consequência é que cada navegador enxerga só a última importação feita nele
+mesmo.
 
-### 5.8 Filtro e ordenação client-side na tela de Produtos
+### 5.8 Busca, filtro, ordenação e paginação client-side na tela de Produtos
 
 A tabela de produtos busca todos os resultados da importação de uma vez e
-aplica filtro (classificação) e ordenação (custo/giro) no navegador, sem
-paginação nem parâmetros de query no backend. Aceitável para o volume de
-dados de uma importação de PoC; seria revisado para lotes muito maiores.
+aplica no navegador: busca por nome ou código, filtro por classificação,
+ordenação (custo gerencial, giro 90d, desconto máximo em % e em R$) e
+paginação (10, 25, 50 ou 100 itens por página). Não há parâmetros de query
+no backend. Aceitável para o volume de dados de uma importação de PoC;
+seria revisado para lotes muito maiores.
 
 ### 5.9 Clustering K-Means como notebook standalone
 
@@ -139,16 +147,44 @@ credenciais do backend. Decisão de escopo: nesta fase o objetivo é validar
 (reforçar ou refinar) a classificação por regras do módulo 4 com um método
 não supervisionado, não expor isso como funcionalidade do produto.
 
+### 5.10 Exportação da tabela gerada no navegador
+
+O botão "Exportar Excel" da tela de Produtos gera um CSV no próprio
+navegador (`utils/exportCsv.ts`), sem endpoint no backend. Exporta as linhas
+que passaram pela busca e pelo filtro (todas as páginas, na ordenação
+atual), com `;` como delimitador e valores no formato BR. O arquivo começa
+com BOM UTF-8 para o Excel abrir os acentos corretamente — o mesmo problema
+de encoding da seção 5.3, na direção contrária.
+
+### 5.11 Sistema aberto, sem conceito de usuário
+
+Decisão de escopo: o StockWise não terá login nem cadastro de usuários. A
+interface não exibe nenhum usuário (o indicador de usuário que existia na
+barra superior foi removido), e todos os dados importados ficam acessíveis a
+quem acessar o frontend.
+
+### 5.12 Explicações das métricas na própria interface
+
+Cada métrica da tabela de Produtos e cada indicador do Dashboard tem um
+ícone de ajuda (`HelpTooltip`) com uma explicação curta e um exemplo. A
+página Ajuda (`/ajuda`) traz o passo a passo de uso e as fórmulas completas
+com exemplos numéricos.
 ## 6. Limitações conhecidas do PoC
 
-- Sem autenticação/autorização — qualquer pessoa com acesso à URL do
-  frontend pode importar dados e ver os resultados.
+- Sem autenticação/autorização (decisão de escopo, ver 5.11) — qualquer
+  pessoa com acesso à URL do frontend pode importar dados e ver os
+  resultados.
 - Sem integração direta com ERP — depende de exportação manual de CSV.
 - Supabase no plano gratuito pausa o projeto após período de inatividade,
   o que derruba a conexão do backend até o projeto ser reativado
   manualmente no painel.
-- Sem paginação — assume que uma importação cabe inteira na memória do
-  navegador.
+- Paginação só no navegador — assume que uma importação cabe inteira na
+  memória do navegador.
+- Os indicadores em R$ do Dashboard (valor total imobilizado, valor
+  imobilizado crítico e potencial de recuperação) somam valores **por
+  unidade** (custo gerencial e desconto máximo unitários), sem multiplicar
+  pela quantidade em estoque. Os tooltips descrevem o cálculo como está; a
+  correção fica para uma próxima etapa.
 
 ## 7. Testes
 
@@ -156,7 +192,9 @@ não supervisionado, não expor isso como funcionalidade do produto.
   (encoding, delimitador, formato decimal, campos obrigatórios), cálculo de
   custo gerencial, giro, classificação e desconto máximo, e a API de
   importação de ponta a ponta.
-- Frontend: Vitest + Testing Library (`frontend/src/pages/*.test.tsx`),
-  cobrindo renderização da tela de Upload (resumo e erros por linha) e da
-  tela de Produtos (listagem e filtro por classificação).
+- Frontend: Vitest + Testing Library (`frontend/src/App.test.tsx` e
+  `frontend/src/pages/*.test.tsx`), cobrindo a renderização do layout, a
+  tela de Upload (envio do CSV com resumo e erros por linha, estado sem
+  importação e resumo da última importação salva) e a tela de Produtos
+  (listagem e filtro por classificação).
 - Metas de cobertura definidas no README: ≥75% backend, ≥25% frontend.

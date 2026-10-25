@@ -37,13 +37,13 @@ export default function AjudaPage() {
         <p className="mt-3 text-sm text-slate-600">
           É o custo de aquisição do produto somado aos custos de armazenagem e de oportunidade
           acumulados proporcionalmente ao tempo em estoque. Ele mostra o quanto um produto parado
-          realmente custa para a empresa ao longo do tempo, não só o preço pago na compra — é a base
+          realmente custa para a empresa ao longo do tempo, não só o preço pago na compra. É a base
           usada para calcular giro, classificação e o desconto máximo seguro de cada item.
         </p>
         <BlocoFormula>
-          {"custo_armazenagem = custo_aquisicao × (armazenagem_%_mensal / 100) × (dias_em_estoque / 30)\n" +
-            "custo_oportunidade = custo_aquisicao × (taxa_oportunidade_%_anual / 100) × (dias_em_estoque / 365)\n\n" +
-            "custo_gerencial_composto = custo_aquisicao + custo_armazenagem + custo_oportunidade"}
+          {"Custo de armazenagem = Custo de aquisição × (% de armazenagem ao mês / 100) × (dias em estoque / 30)\n" +
+            "Custo de oportunidade = Custo de aquisição × (% de oportunidade ao ano / 100) × (dias em estoque / 365)\n\n" +
+            "Custo gerencial composto = Custo de aquisição + Custo de armazenagem + Custo de oportunidade"}
         </BlocoFormula>
         <p className="mt-3 text-sm text-slate-600">
           Exemplo: custo de aquisição R$ 100, armazenagem de 1,2% ao mês, custo de oportunidade de
@@ -61,8 +61,8 @@ export default function AjudaPage() {
           dias e permitir comparação entre eles.
         </p>
         <BlocoFormula>
-          {"razão do período = qtd_vendida_90d / quantidade_estoque_atual\n" +
-            "giro_90d = razão do período × (365 / 90)"}
+          {"Razão do período = Quantidade vendida em 90 dias / Quantidade em estoque atual\n" +
+            "Giro (90 dias) = Razão do período × (365 / 90)"}
         </BlocoFormula>
         <p className="mt-3 text-sm text-slate-600">
           Exemplo: produto com 20 unidades vendidas e 10 em estoque. Razão do período = 20 / 10 =
@@ -73,16 +73,16 @@ export default function AjudaPage() {
       <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-md">
         <h2 className="text-sm font-semibold text-slate-800">Classificação (Prioridade Alta/Média/Baixa)</h2>
         <p className="mt-3 text-sm text-slate-600">
-          É um score relativo de 0 a 1 que combina três fatores com peso igual — custo gerencial,
-          giro e nível de estoque — cada um comparado com os demais produtos do mesmo lote
+          É um score relativo de 0 a 1 que combina três fatores com peso igual (custo gerencial,
+          giro e nível de estoque), cada um comparado com os demais produtos do mesmo lote
           importado (posição relativa, não um valor absoluto). O giro entra invertido na fórmula,
           porque giro baixo (produto parado) é o que deve aumentar a prioridade de ação.
         </p>
         <BlocoFormula>
-          {"rank_custo, rank_giro, rank_estoque = posição relativa (0 a 1) do produto\n" +
-            "  dentro do lote, para custo gerencial, giro (90d) e razão de estoque\n" +
-            "  (quantidade_estoque_atual / estoque_minimo)\n\n" +
-            "score = (rank_custo + (1 − rank_giro) + rank_estoque) / 3"}
+          {"Posição no custo, Posição no giro, Posição no estoque = ranking do produto (de 0 a 1)\n" +
+            "  comparado aos demais produtos do mesmo lote, considerando custo gerencial,\n" +
+            "  giro (90 dias) e nível de estoque (estoque atual / estoque mínimo)\n\n" +
+            "Pontuação de prioridade = (Posição no custo + (1 − Posição no giro) + Posição no estoque) / 3"}
         </BlocoFormula>
         <p className="mt-3 text-sm text-slate-600">
           Limiares: score ≥ 0,67 → Prioridade Alta · entre 0,34 e 0,67 → Prioridade Média · abaixo
@@ -102,9 +102,9 @@ export default function AjudaPage() {
           do custo gerencial composto mais uma margem mínima de segurança (10% por padrão).
         </p>
         <BlocoFormula>
-          {"preço_mínimo = custo_gerencial_composto × (1 + margem_mínima)\n" +
-            "desconto_máximo (R$) = preço_venda_unitário − preço_mínimo\n" +
-            "desconto_máximo (%) = desconto_máximo (R$) / preço_venda_unitário × 100"}
+          {"Preço mínimo = Custo gerencial composto × (1 + margem mínima)\n" +
+            "Desconto máximo (R$) = Preço de venda − Preço mínimo\n" +
+            "Desconto máximo (%) = Desconto máximo (R$) / Preço de venda × 100"}
         </BlocoFormula>
         <p className="mt-3 text-sm text-slate-600">
           Exemplo: preço R$ 34,90, custo gerencial R$ 22,69, margem 10% → preço mínimo = R$ 22,69 ×

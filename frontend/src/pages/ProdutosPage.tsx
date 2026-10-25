@@ -12,7 +12,7 @@ import { exportarCsv } from "../utils/exportCsv";
 import { formatarMoeda, formatarNumero } from "../utils/format";
 
 const OPCOES_CLASSIFICACAO: Classificacao[] = ["Prioridade Alta", "Prioridade Média", "Prioridade Baixa"];
-const ITENS_POR_PAGINA = 10;
+const OPCOES_ITENS_POR_PAGINA = [10, 25, 50, 100];
 
 interface LinhaProduto {
   codigo_produto: string;
@@ -40,6 +40,7 @@ export default function ProdutosPage() {
     null,
   );
   const [paginaAtual, setPaginaAtual] = useState(1);
+  const [itensPorPagina, setItensPorPagina] = useState(OPCOES_ITENS_POR_PAGINA[0]);
 
   const linhas: LinhaProduto[] = useMemo(() => {
     if (estado.status !== "sucesso") return [];
@@ -84,11 +85,11 @@ export default function ProdutosPage() {
     });
   }, [linhas, filtroClassificacao, termoBusca, ordenacao]);
 
-  const totalPaginas = Math.max(1, Math.ceil(linhasFiltradas.length / ITENS_POR_PAGINA));
+  const totalPaginas = Math.max(1, Math.ceil(linhasFiltradas.length / itensPorPagina));
   const paginaCorrigida = Math.min(paginaAtual, totalPaginas);
   const linhasPaginadas = linhasFiltradas.slice(
-    (paginaCorrigida - 1) * ITENS_POR_PAGINA,
-    paginaCorrigida * ITENS_POR_PAGINA,
+    (paginaCorrigida - 1) * itensPorPagina,
+    paginaCorrigida * itensPorPagina,
   );
 
   function alternarOrdenacao(chave: ChaveOrdenacao) {
@@ -199,7 +200,7 @@ export default function ProdutosPage() {
             setFiltroClassificacao(evento.target.value as Classificacao | "todas");
             setPaginaAtual(1);
           }}
-          className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:border-blue-400 focus:outline-none"
+          className="cursor-pointer rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:border-blue-400 focus:outline-none"
         >
           <option value="todas">Todas as classificações</option>
           {OPCOES_CLASSIFICACAO.map((opcao) => (
@@ -217,7 +218,7 @@ export default function ProdutosPage() {
           type="button"
           onClick={exportarProdutos}
           disabled={linhasFiltradas.length === 0}
-          className="ml-auto flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+          className="ml-auto flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
         >
           <Download size={16} />
           Exportar Excel
@@ -241,7 +242,10 @@ export default function ProdutosPage() {
                     Custo gerencial
                     {iconeOrdenacao("custo_gerencial_composto")}
                   </button>
-                  <HelpTooltip texto="Custo de aquisição + armazenagem + oportunidade, proporcionais ao tempo em estoque. Ex: R$ 100 parado 30 dias pode chegar a R$ 101,99." />
+                  <HelpTooltip
+                    texto="Custo de aquisição + armazenagem + oportunidade, proporcionais ao tempo em estoque. Ex: R$ 100 parado 30 dias pode chegar a R$ 101,99."
+                    alinhar="direita"
+                  />
                 </div>
               </th>
               <th className="w-[11%] px-4 py-3">Preço de venda</th>
@@ -255,7 +259,10 @@ export default function ProdutosPage() {
                     Giro (90d)
                     {iconeOrdenacao("giro_90d")}
                   </button>
-                  <HelpTooltip texto="Vendas dos últimos 90 dias em relação ao estoque. Ex: giro 5,89 = girou quase 6x o estoque; perto de 0 = produto parado." />
+                  <HelpTooltip
+                    texto="Vendas dos últimos 90 dias em relação ao estoque. Ex: giro 5,89 = girou quase 6x o estoque; perto de 0 = produto parado."
+                    alinhar="direita"
+                  />
                 </div>
               </th>
               <th className="w-[13%] px-4 py-3">
@@ -330,7 +337,17 @@ export default function ProdutosPage() {
         </table>
         </div>
 
-        <Pagination paginaAtual={paginaCorrigida} totalPaginas={totalPaginas} onMudarPagina={setPaginaAtual} />
+        <Pagination
+          paginaAtual={paginaCorrigida}
+          totalPaginas={totalPaginas}
+          onMudarPagina={setPaginaAtual}
+          itensPorPagina={itensPorPagina}
+          opcoesItensPorPagina={OPCOES_ITENS_POR_PAGINA}
+          onMudarItensPorPagina={(itens) => {
+            setItensPorPagina(itens);
+            setPaginaAtual(1);
+          }}
+        />
       </div>
     </section>
   );
