@@ -63,3 +63,33 @@ jobs:
         with:
           name: frontend-coverage
           path: frontend/coverage/lcov.info
+
+  sonarcloud:
+    name: SonarCloud
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # histórico completo melhora a análise de código novo
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: backend-coverage
+          path: backend
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: frontend-coverage
+          path: frontend/coverage
+
+      # Os relatórios são gerados dentro de backend/ e frontend/, mas o Sonar
+      # analisa a partir da raiz do repositório.
+      - name: Ajustar caminhos dos relatórios de cobertura
+        run: |
+          sed -i 's#<source>app</source>#<source>backend/app</source>#' backend/coverage.xml
+          sed -i 's#^SF:#SF:frontend/#' frontend/coverage/lcov.info
+
+      - uses: SonarSource/sonarqube-scan-action@v5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
