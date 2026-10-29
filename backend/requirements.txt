@@ -5,3 +5,4 @@ supabase
 python-multipart
 pytest
 httpx
+pytest-cov
