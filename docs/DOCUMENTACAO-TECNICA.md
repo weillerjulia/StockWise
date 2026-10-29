@@ -150,7 +150,7 @@ StockWise/
 │       │   ├── KpiCard.tsx        # card de indicador numérico
 │       │   ├── ClassificacaoBadge.tsx  # pílula colorida por classificação
 │       │   ├── MapaPrioridadeChart.tsx # dispersão giro × custo gerencial do Dashboard
-│       │   ├── HelpTooltip.tsx    # tooltip de ajuda inline nas colunas da tabela
+│       │   ├── HelpTooltip.tsx    # tooltip de ajuda inline (colunas da tabela e cards do Dashboard)
 │       │   └── Pagination.tsx     # paginação client-side da tabela de produtos
 │       └── utils/
 │           ├── format.ts          # formatação de moeda/número/data em pt-BR
@@ -469,8 +469,8 @@ diferentes; sem isso o navegador bloqueia as respostas da API.
 
 ### 4.4 Autenticação/autorização
 
-**Não existe.** É uma decisão de escopo explícita do PoC (ver RFC seção
-6): qualquer pessoa com acesso à URL do frontend pode importar dados e ver
+**Não existe.** É uma decisão de escopo explícita do PoC (ver RFC seções
+5.11 e 6): o sistema é aberto, sem login, e qualquer pessoa com acesso à URL do frontend pode importar dados e ver
 os resultados. Não há diferenciação de usuários/perfis — o único "estado
 de sessão" é o `id` da última importação, guardado no `localStorage` do
 navegador (ver seção 4.5/5.2).
@@ -496,12 +496,15 @@ Componentes reutilizáveis (`frontend/src/components/`):
 - **`AppLayout` / `Sidebar` / `Topbar`** — casca visual comum a todas as
   telas (navegação, título da página).
 - **`KpiCard`** — card genérico de indicador numérico (label + valor +
-  cor/alerta opcional), usado no Dashboard e na Upload.
+  cor/alerta opcional + ícone de ajuda opcional via prop `ajuda`), usado no
+  Dashboard e na Upload.
 - **`ClassificacaoBadge`** — pílula colorida (vermelho/laranja/verde) para
   a classificação de prioridade.
 - **`HelpTooltip`** — ícone de ajuda com texto explicativo, usado nos
-  cabeçalhos de coluna da tabela de Produtos.
-- **`Pagination`** — controle de paginação client-side.
+  cabeçalhos de coluna da tabela de Produtos e nos cards de indicadores do
+  Dashboard.
+- **`Pagination`** — controle de paginação client-side, com seletor de
+  itens por página (10, 25, 50 ou 100).
 - **`MapaPrioridadeChart`** — gráfico de dispersão (giro 90d × custo
   gerencial) do Dashboard, um ponto por produto. A classificação é
   codificada por cor **e** formato do marcador (triângulo/losango/círculo),
