@@ -7,11 +7,75 @@ const PASSOS = [
   "Use os descontos sugeridos para planejar suas promoções.",
 ];
 
+type LinhaExemplo = { nome: string; calculo: string; valor: string; destaque?: boolean };
+
+const EXEMPLO_CUSTO_GERENCIAL: LinhaExemplo[] = [
+  { nome: "Custo de aquisição", calculo: "—", valor: "R$ 100,00" },
+  { nome: "Armazenagem", calculo: "100 × 1,2% × (90 ÷ 30)", valor: "R$ 3,60" },
+  { nome: "Oportunidade", calculo: "100 × 12% × (90 ÷ 365)", valor: "R$ 2,96" },
+  { nome: "Custo gerencial composto", calculo: "100 + 3,60 + 2,96", valor: "R$ 106,56", destaque: true },
+];
+
+const EXEMPLO_GIRO: LinhaExemplo[] = [
+  { nome: "Razão do período", calculo: "20 ÷ 10", valor: "2,0" },
+  { nome: "Giro (90 dias)", calculo: "2,0 × (365 ÷ 90)", valor: "8,11", destaque: true },
+];
+
+const EXEMPLO_CLASSIFICACAO: LinhaExemplo[] = [
+  { nome: "Custo (topo do rank)", calculo: "0,4 × 1", valor: "0,40" },
+  { nome: "Giro (o mais baixo do lote)", calculo: "0,4 × (1 − 0)", valor: "0,40" },
+  { nome: "Estoque (pouco em relação ao mínimo)", calculo: "0,2 × 0", valor: "0,00" },
+  { nome: "Pontuação de prioridade", calculo: "0,40 + 0,40 + 0,00", valor: "0,80", destaque: true },
+];
+
+const EXEMPLO_DESCONTO: LinhaExemplo[] = [
+  { nome: "Preço mínimo", calculo: "22,69 × 1,10", valor: "R$ 24,96" },
+  { nome: "Desconto máximo (R$)", calculo: "34,90 − 24,96", valor: "R$ 9,94", destaque: true },
+  { nome: "Desconto máximo (%)", calculo: "9,94 ÷ 34,90 × 100", valor: "28,48%", destaque: true },
+];
+
 function BlocoFormula({ children }: { children: ReactNode }) {
   return (
     <pre className="mt-3 overflow-x-auto rounded-lg bg-slate-100 px-3 py-2.5 font-mono text-xs whitespace-pre-wrap text-slate-700">
       {children}
     </pre>
+  );
+}
+
+function BlocoExemplo({
+  entrada,
+  colunaNome,
+  linhas,
+}: {
+  entrada: string;
+  colunaNome: string;
+  linhas: LinhaExemplo[];
+}) {
+  return (
+    <>
+      <h3 className="mt-5 text-sm font-semibold text-slate-800">Exemplo</h3>
+      <p className="mt-1 text-sm text-slate-600">{entrada}</p>
+      <div className="mt-3 overflow-x-auto">
+        <table className="w-full text-sm whitespace-nowrap">
+          <thead>
+            <tr className="text-left text-xs font-medium tracking-wide text-slate-600 uppercase">
+              <th className="pr-4 pb-2">{colunaNome}</th>
+              <th className="pr-4 pb-2">Cálculo</th>
+              <th className="pb-2 text-right">Valor</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {linhas.map((linha) => (
+              <tr key={linha.nome} className={linha.destaque ? "font-semibold text-slate-800" : "text-slate-600"}>
+                <td className="py-2 pr-4">{linha.nome}</td>
+                <td className="py-2 pr-4">{linha.calculo}</td>
+                <td className="py-2 text-right">{linha.valor}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }
 
@@ -45,12 +109,11 @@ export default function AjudaPage() {
             "Custo de oportunidade = Custo de aquisição × (% de oportunidade ao ano / 100) × (dias em estoque / 365)\n\n" +
             "Custo gerencial composto = Custo de aquisição + Custo de armazenagem + Custo de oportunidade"}
         </BlocoFormula>
-        <p className="mt-3 text-sm text-slate-600">
-          Exemplo: custo de aquisição R$ 100, armazenagem de 1,2% ao mês, custo de oportunidade de
-          12% ao ano, 30 dias em estoque. Armazenagem = R$ 100 × 1,2% × (30/30) = R$ 1,20.
-          Oportunidade = R$ 100 × 12% × (30/365) ≈ R$ 0,99. Custo gerencial composto = R$ 100 + R$
-          1,20 + R$ 0,99 = R$ 102,19.
-        </p>
+        <BlocoExemplo
+          entrada="Custo de aquisição: R$ 100 · Armazenagem: 1,2% ao mês · Oportunidade: 12% ao ano · 90 dias em estoque"
+          colunaNome="Componente"
+          linhas={EXEMPLO_CUSTO_GERENCIAL}
+        />
       </div>
 
       <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-md">
@@ -63,10 +126,11 @@ export default function AjudaPage() {
           {"Razão do período = Quantidade vendida em 90 dias / Quantidade em estoque atual\n" +
             "Giro (90 dias) = Razão do período × (365 / 90)"}
         </BlocoFormula>
-        <p className="mt-3 text-sm text-slate-600">
-          Exemplo: produto com 20 unidades vendidas e 10 em estoque. Razão do período = 20 / 10 =
-          2,0. Anualizando: giro_90d = 2,0 × (365 / 90) ≈ 8,11.
-        </p>
+        <BlocoExemplo
+          entrada="Vendidas em 90 dias: 20 unidades · Em estoque: 10 unidades"
+          colunaNome="Etapa"
+          linhas={EXEMPLO_GIRO}
+        />
       </div>
 
       <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-md">
@@ -90,11 +154,14 @@ export default function AjudaPage() {
           Limiares: score ≥ 0,67 → Prioridade Alta · entre 0,34 e 0,67 → Prioridade Média · abaixo
           de 0,34 → Prioridade Baixa.
         </p>
+        <BlocoExemplo
+          entrada="Produto caro e parado (giro baixo), com pouco estoque em relação ao mínimo"
+          colunaNome="Fator"
+          linhas={EXEMPLO_CLASSIFICACAO}
+        />
         <p className="mt-3 text-sm text-slate-600">
-          Exemplo: um produto caro e parado (giro baixo) fica no topo do rank de custo e de giro e
-          soma 0,8 só com esses dois fatores → Prioridade Alta, mesmo que tenha pouco estoque em
-          relação ao mínimo. Se além disso o estoque estiver bem acima do mínimo, o score chega
-          perto de 1.
+          Com 0,80 o produto fica em Prioridade Alta, mesmo com pouco estoque. Se além disso o
+          estoque estiver bem acima do mínimo, o score chega perto de 1.
         </p>
       </div>
 
@@ -139,10 +206,11 @@ export default function AjudaPage() {
             "Desconto máximo (R$) = Preço de venda − Preço mínimo\n" +
             "Desconto máximo (%) = Desconto máximo (R$) / Preço de venda × 100"}
         </BlocoFormula>
-        <p className="mt-3 text-sm text-slate-600">
-          Exemplo: preço R$ 34,90, custo gerencial R$ 22,69, margem 10% → preço mínimo = R$ 22,69 ×
-          1,10 = R$ 24,96 → desconto máximo = R$ 34,90 − R$ 24,96 = R$ 9,94 (28,48%).
-        </p>
+        <BlocoExemplo
+          entrada="Preço de venda: R$ 34,90 · Custo gerencial: R$ 22,69 · Margem mínima: 10%"
+          colunaNome="Etapa"
+          linhas={EXEMPLO_DESCONTO}
+        />
       </div>
     </section>
   );
