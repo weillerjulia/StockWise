@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 
+import { SELOS_DESCONTO, type TipoSituacaoDesconto } from "../utils/situacaoDesconto";
+
 const PASSOS = [
   "Importe o CSV do estoque na tela de Upload.",
   "Veja os indicadores gerais na Visão geral (produtos críticos, valor imobilizado, potencial de recuperação).",
@@ -32,6 +34,12 @@ const EXEMPLO_DESCONTO: LinhaExemplo[] = [
   { nome: "Preço mínimo", calculo: "22,69 × 1,10", valor: "R$ 24,96" },
   { nome: "Desconto máximo (R$)", calculo: "34,90 − 24,96", valor: "R$ 9,94", destaque: true },
   { nome: "Desconto máximo (%)", calculo: "9,94 ÷ 34,90 × 100", valor: "28,48%", destaque: true },
+];
+
+const EXEMPLOS_SELO: { tipo: TipoSituacaoDesconto; quando: string; exemplo: string }[] = [
+  { tipo: "prejuizo", quando: "Preço de venda abaixo do custo gerencial", exemplo: "Preço R$ 20,00: R$ 2,69 abaixo do custo" },
+  { tipo: "sem_margem", quando: "Preço acima do custo, mas abaixo do preço mínimo", exemplo: "Preço R$ 24,00: faltam R$ 0,96 para o mínimo" },
+  { tipo: "no_limite", quando: "Preço igual ao preço mínimo", exemplo: "Preço R$ 24,96: qualquer desconto perde a margem" },
 ];
 
 function BlocoFormula({ children }: { children: ReactNode }) {
@@ -211,6 +219,41 @@ export default function AjudaPage() {
           colunaNome="Etapa"
           linhas={EXEMPLO_DESCONTO}
         />
+
+        <h3 className="mt-5 text-sm font-semibold text-slate-800">Quando o desconto é zero</h3>
+        <p className="mt-1 text-sm text-slate-600">
+          Se o preço de venda não está acima do preço mínimo, não há espaço para desconto. Nesse caso,
+          a tabela de Produtos mostra um selo no lugar do percentual, com a explicação ao passar o
+          mouse. Uma faixa acima da tabela resume quantos produtos estão nessa situação, e a coluna
+          Observação do arquivo exportado traz a mesma explicação. Nos exemplos abaixo, o custo
+          gerencial é R$ 22,69 e o preço mínimo é R$ 24,96.
+        </p>
+        <div className="mt-3 overflow-x-auto">
+          <table className="w-full text-sm whitespace-nowrap">
+            <thead>
+              <tr className="text-left text-xs font-medium tracking-wide text-slate-600 uppercase">
+                <th className="pr-4 pb-2">Selo</th>
+                <th className="pr-4 pb-2">Quando aparece</th>
+                <th className="pb-2">Exemplo</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 text-slate-600">
+              {EXEMPLOS_SELO.map(({ tipo, quando, exemplo }) => (
+                <tr key={tipo}>
+                  <td className="py-2 pr-4">
+                    <span
+                      className={`inline-block rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset ${SELOS_DESCONTO[tipo].cores}`}
+                    >
+                      {SELOS_DESCONTO[tipo].rotulo}
+                    </span>
+                  </td>
+                  <td className="py-2 pr-4">{quando}</td>
+                  <td className="py-2">{exemplo}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </section>
   );

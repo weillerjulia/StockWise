@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronsUpDown, ChevronUp, Download, Search } from "lucide-react";
+import { AlertTriangle, ChevronDown, ChevronsUpDown, ChevronUp, Download, Search } from "lucide-react";
 import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
@@ -7,9 +7,11 @@ import type { Classificacao } from "../api/types";
 import ClassificacaoBadge from "../components/ClassificacaoBadge";
 import HelpTooltip from "../components/HelpTooltip";
 import Pagination from "../components/Pagination";
+import SeloSemDesconto from "../components/SeloSemDesconto";
 import { useResultadosUltimaImportacao } from "../hooks/useResultadosUltimaImportacao";
 import { exportarCsv } from "../utils/exportCsv";
 import { formatarMoeda, formatarNumero } from "../utils/format";
+import { descreverSituacaoDesconto, type SituacaoDesconto } from "../utils/situacaoDesconto";
 
 const OPCOES_CLASSIFICACAO: Classificacao[] = ["Prioridade Alta", "Prioridade Média", "Prioridade Baixa"];
 const OPCOES_ITENS_POR_PAGINA = [10, 25, 50, 100];
@@ -24,6 +26,7 @@ interface LinhaProduto {
   classificacao: Classificacao;
   desconto_maximo_percentual: number | null;
   desconto_maximo_valor: number | null;
+  situacao_desconto: SituacaoDesconto | null;
 }
 
 type ChaveOrdenacao =
@@ -59,10 +62,34 @@ export default function ProdutosPage() {
           classificacao: resultado.classificacao,
           desconto_maximo_percentual: resultado.desconto_maximo_percentual,
           desconto_maximo_valor: resultado.desconto_maximo_valor,
+          situacao_desconto:
+            resultado.desconto_maximo_valor === 0 && linha.preco_venda_unitario != null
+              ? descreverSituacaoDesconto(resultado.custo_gerencial_composto, linha.preco_venda_unitario)
+              : null,
         };
       })
       .filter((linha): linha is LinhaProduto => linha != null);
   }, [estado]);
+
+  const avisoSemDesconto = useMemo(() => {
+    const contar = (tipo: SituacaoDesconto["tipo"]) =>
+      linhas.filter((linha) => linha.situacao_desconto?.tipo === tipo).length;
+    const contagens: [number, string][] = [
+      [contar("prejuizo"), "com prejuízo"],
+      [contar("sem_margem"), "sem margem"],
+      [contar("no_limite"), "no limite"],
+    ];
+    const total = contagens.reduce((soma, [quantidade]) => soma + quantidade, 0);
+    if (total === 0) return null;
+
+    const detalhes = contagens
+      .filter(([quantidade]) => quantidade > 0)
+      .map(([quantidade, descricao]) => `${quantidade} ${descricao}`);
+    const detalhe = new Intl.ListFormat("pt-BR", { type: "conjunction" }).format(detalhes);
+    const inicio = total === 1 ? "1 produto não permite desconto" : `${total} produtos não permitem desconto`;
+
+    return `${inicio}: ${detalhe}. Reveja o preço ou o custo antes de planejar uma promoção.`;
+  }, [linhas]);
 
   const linhasFiltradas = useMemo(() => {
     const termo = termoBusca.trim().toLowerCase();
@@ -131,6 +158,7 @@ export default function ProdutosPage() {
       "Classificação",
       "Desconto máximo (%)",
       "Desconto máximo (R$)",
+      "Observação",
     ];
 
     const linhasCsv = linhasFiltradas.map((linha) => [
@@ -142,6 +170,7 @@ export default function ProdutosPage() {
       linha.classificacao,
       linha.desconto_maximo_percentual != null ? `${formatarNumero(linha.desconto_maximo_percentual)}%` : "",
       linha.desconto_maximo_valor != null ? formatarMoeda(linha.desconto_maximo_valor) : "",
+      linha.situacao_desconto?.mensagem ?? "",
     ]);
 
     const dataDeHoje = new Date().toISOString().slice(0, 10);
@@ -224,6 +253,16 @@ export default function ProdutosPage() {
           Exportar Excel
         </button>
       </div>
+
+      {avisoSemDesconto && (
+        <p
+          role="status"
+          className="mt-4 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"
+        >
+          <AlertTriangle size={16} className="mt-0.5 shrink-0" aria-hidden="true" />
+          {avisoSemDesconto}
+        </p>
+      )}
 
       <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-md">
         <div className="overflow-x-auto">
@@ -324,9 +363,13 @@ export default function ProdutosPage() {
                   <ClassificacaoBadge classificacao={linha.classificacao} />
                 </td>
                 <td className="px-4 py-3 font-semibold text-slate-800">
-                  {linha.desconto_maximo_percentual != null
-                    ? `${formatarNumero(linha.desconto_maximo_percentual)}%`
-                    : "-"}
+                  {linha.situacao_desconto ? (
+                    <SeloSemDesconto situacao={linha.situacao_desconto} />
+                  ) : linha.desconto_maximo_percentual != null ? (
+                    `${formatarNumero(linha.desconto_maximo_percentual)}%`
+                  ) : (
+                    "-"
+                  )}
                 </td>
                 <td className="px-4 py-3 font-semibold text-slate-800">
                   {linha.desconto_maximo_valor != null ? formatarMoeda(linha.desconto_maximo_valor) : "-"}
