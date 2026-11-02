@@ -2,7 +2,7 @@
 
 **Sistema de Apoio à Decisão para Definição de Estratégias Promocionais Baseado no Custo Gerencial de Estoque em Autopeças**
 
-> Status: PoC funcional — upload de CSV, cálculos de custo gerencial/giro/classificação/desconto máximo, dashboard com indicadores e gráficos, tabela de produtos com busca/filtro/ordenação/paginação/exportação, página de ajuda e análise exploratória com K-Means.
+> Status: PoC funcional: upload de CSV, cálculos de custo gerencial/giro/classificação/desconto máximo, dashboard com indicadores e gráficos, tabela de produtos com busca/filtro/ordenação/paginação/exportação, página de ajuda e análise exploratória com K-Means.
 
 ---
 
@@ -95,13 +95,13 @@ O sistema é organizado em três camadas, sem acesso direto do frontend ao banco
 └─────────────────────────────────────────────┘
 ```
 
-O frontend nunca fala com o Supabase diretamente — só com a API FastAPI, que
+O frontend nunca fala com o Supabase diretamente, só com a API FastAPI, que
 é o único componente com a service key do banco.
 
 > A análise exploratória com K-Means (`backend/analysis/`) roda à parte, num
-> notebook Jupyter que lê diretamente do Supabase — não faz parte do fluxo
+> notebook Jupyter que lê diretamente do Supabase. Não faz parte do fluxo
 > da aplicação web, servindo apenas para validar a classificação por regras
-> do módulo 4.
+> do Módulo de Classificação de Produtos.
 
 ---
 
@@ -111,7 +111,7 @@ O frontend nunca fala com o Supabase diretamente — só com a API FastAPI, que
 - Python 3.14 (versão usada no CI), FastAPI, Uvicorn
 - pydantic-settings (configuração via `.env`), python-multipart (upload de arquivo)
 - Parsing de CSV com a biblioteca padrão `csv` (detecção automática de delimitador e
-  codificação) — sem pandas na API
+  codificação), sem pandas na API
 - Supabase (cliente Python) + PostgreSQL como banco
 - pytest, pytest-cov + httpx (testes e cobertura)
 
@@ -170,10 +170,10 @@ Acesse `http://localhost:5173`. Testes: `npm run test` (Vitest).
 
 ### Análise exploratória (K-Means)
 
-Notebook standalone em `backend/analysis/clustering_kmeans.ipynb` — agrupa via
+Notebook standalone em `backend/analysis/clustering_kmeans.ipynb`: agrupa via
 K-Means os produtos de uma importação (por padrão, a mais recente), usando as
-mesmas 3 dimensões e a mesma normalização por rank do módulo 4 (custo
-gerencial, giro 90d e nível de estoque), e compara produto a produto com a
+mesmas 3 dimensões e a mesma normalização por rank do Módulo de Classificação
+de Produtos (custo gerencial, giro 90d e nível de estoque), e compara produto a produto com a
 classificação por regras: percentual de concordância e lista dos produtos
 em que os dois métodos divergem.
 
@@ -240,10 +240,10 @@ Detalhes por módulo em
 
 ## Documentação
 
-- [`docs/RFC.md`](docs/RFC.md) — contexto, arquitetura e decisões técnicas.
-- [`docs/casos-de-uso.md`](docs/casos-de-uso.md) — casos de uso dos
+- [`docs/RFC.md`](docs/RFC.md): contexto, arquitetura e decisões técnicas.
+- [`docs/casos-de-uso.md`](docs/casos-de-uso.md): casos de uso dos
   principais fluxos do sistema.
-- [`docs/DOCUMENTACAO-TECNICA.md`](docs/DOCUMENTACAO-TECNICA.md) — documentação
+- [`docs/DOCUMENTACAO-TECNICA.md`](docs/DOCUMENTACAO-TECNICA.md): documentação
   técnica detalhada (modelo de dados, API, fórmulas, testes e qualidade).
 
 ---
@@ -251,9 +251,9 @@ Detalhes por módulo em
 ## Autora
 
 **Julia Weiller**
-Universidade Católica de Santa Catarina — Jaraguá do Sul, SC
+Universidade Católica de Santa Catarina, Jaraguá do Sul, SC
 [julia.weiller@catolicasc.edu.br](mailto:julia.weiller@catolicasc.edu.br)
 
 ---
 
-*Trabalho de Conclusão de Curso — Linha de Projeto Web Apps — PAC 7/8 · 2026*
+*Trabalho de Conclusão de Curso · Linha de Projeto Web Apps · PAC 7/8 · 2026*
