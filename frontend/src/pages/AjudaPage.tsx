@@ -38,7 +38,7 @@ export default function AjudaPage() {
           É o custo de aquisição do produto somado aos custos de armazenagem e de oportunidade
           acumulados proporcionalmente ao tempo em estoque. Ele mostra o quanto um produto parado
           realmente custa para a empresa ao longo do tempo, não só o preço pago na compra. É a base
-          usada para calcular giro, classificação e o desconto máximo seguro de cada item.
+          usada para calcular o desconto máximo seguro de cada item e um dos fatores da classificação.
         </p>
         <BlocoFormula>
           {"Custo de armazenagem = Custo de aquisição × (% de armazenagem ao mês / 100) × (dias em estoque / 30)\n" +
@@ -56,9 +56,8 @@ export default function AjudaPage() {
       <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-md">
         <h2 className="text-sm font-semibold text-slate-800">Giro de estoque (90 dias)</h2>
         <p className="mt-3 text-sm text-slate-600">
-          Mede quantas vezes o estoque girou (foi vendido em relação ao que havia disponível) nos
-          últimos 90 dias. O resultado é anualizado para ficar na mesma escala dos giros de 30 e 180
-          dias e permitir comparação entre eles.
+          Mede o ritmo de venda do estoque nos últimos 90 dias, projetado para um ano, para ficar na
+          mesma escala dos giros de 30 e 180 dias e permitir comparação entre eles.
         </p>
         <BlocoFormula>
           {"Razão do período = Quantidade vendida em 90 dias / Quantidade em estoque atual\n" +

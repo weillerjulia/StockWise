@@ -260,7 +260,7 @@ export default function ProdutosPage() {
                     {iconeOrdenacao("giro_90d")}
                   </button>
                   <HelpTooltip
-                    texto="Vendas dos últimos 90 dias em relação ao estoque. Ex: giro 5,89 = girou quase 6x o estoque; perto de 0 = produto parado."
+                    texto="Vendas dos últimos 90 dias em relação ao estoque, projetadas para um ano. Ex: giro 5,89 = nesse ritmo, o estoque giraria quase 6x por ano; perto de 0 = produto parado."
                     alinhar="direita"
                   />
                 </div>

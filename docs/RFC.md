@@ -34,18 +34,21 @@ CSV (upload manual)  →  Backend (FastAPI)  →  Supabase (Postgres)
 ## 3. Stack tecnológica (implementada)
 
 **Backend** (`backend/requirements.txt`): FastAPI, Uvicorn, pydantic-settings,
-supabase-py, python-multipart (upload de arquivo), pytest, httpx
+supabase-py, python-multipart (upload de arquivo), pytest, pytest-cov, httpx
 (`TestClient`). Parsing de CSV com a biblioteca padrão `csv` — sem pandas na
 API (pandas é usado só na análise exploratória, ver abaixo).
 
 **Frontend** (`frontend/package.json`): React 19 + TypeScript, Vite,
-React Router, Tailwind CSS v4, lucide-react (ícones), Recharts (gráfico do
-dashboard), Vitest + Testing Library.
+React Router, Tailwind CSS v4, lucide-react (ícones), Recharts (gráficos do
+dashboard), Vitest + Testing Library + `@vitest/coverage-v8`.
 
 **Banco**: Supabase (Postgres gerenciado), schema em `backend/db/schema.sql`.
 
 **Análise exploratória** (`backend/analysis/requirements.txt`, isolado do
 runtime da API): pandas, scikit-learn, matplotlib, python-dotenv, Jupyter.
+
+**CI e qualidade** (`.github/workflows/ci.yml`, `sonar-project.properties`):
+GitHub Actions, com Python 3.14 e Node.js 24, e SonarQube Cloud.
 
 ## 4. Fluxo de dados ponta a ponta
 
@@ -82,9 +85,10 @@ usuário a cada atualização de dados.
 `produtos` (dimensão descritiva), `estoque_snapshots` (o que veio
 literalmente do CSV em cada upload) e `resultados_analise` (o que é
 calculado pelo sistema) são tabelas distintas, não uma tabela larga única.
-Isso permite: (a) manter histórico entre importações para comparar giro/custo
-ao longo do tempo; (b) reprocessar os cálculos sem precisar reimportar o
-CSV. `importacoes` dá rastreabilidade de cada upload (linhas com erro,
+Isso permite manter histórico entre importações para comparar giro/custo ao
+longo do tempo e deixa o modelo pronto para um futuro reprocessamento sem
+reimportar o CSV. Comparação e reprocessamento ainda não existem no código.
+`importacoes` dá rastreabilidade de cada upload (linhas com erro,
 quando rodou).
 
 ### 5.3 Decodificação de CSV com fallback em cadeia
@@ -97,6 +101,11 @@ sem esse terceiro fallback, o upload falhava com erro de decodificação.
 (nunca levanta erro), então precisa vir depois do CP1252 pra não "roubar"
 arquivos que são CP1252 de verdade.
 
+Consequência: o fallback não identifica a codificação real. Na prática, não
+há erro de decodificação, e um arquivo em outra codificação (ou um Mac Roman
+cujos bytes também sejam válidos em CP1252) pode ser importado com acentos
+incorretos.
+
 ### 5.4 Detecção automática de delimitador e de formato decimal
 
 `csv_import._detectar_delimitador` usa `csv.Sniffer` em vez de assumir `;`
@@ -105,6 +114,13 @@ fixo — outro caso real: um segundo CSV de teste usava `,` como delimitador e
 `R$ 1.234,56`. `_parse_moeda` só aplica a conversão de formato BR
 (remover `.` de milhar, trocar `,` por `.`) quando encontra uma vírgula no
 valor — caso contrário assume que o ponto já é o decimal.
+
+Valores ambíguos ou malformados são recusados e viram erro na linha: `1.234`
+pode ser mil duzentos e trinta e quatro ou pouco mais de um real, e `1,234.50`
+não tem formato suportado. Antes, esses valores eram lidos como 1,234 e 1,2345,
+o que distorcia custo, classificação e desconto sem nenhum aviso. Decisão:
+recusar em vez de adivinhar. Continuam aceitos `0.125` e `1000.000`, que não
+podem ser milhar. Importações já gravadas não são corrigidas.
 
 ### 5.5 CORS explícito via variável de ambiente
 
@@ -175,7 +191,8 @@ quem acessar o frontend.
 ### 5.12 Explicações das métricas na própria interface
 
 Cada métrica da tabela de Produtos e cada indicador do Dashboard tem um
-ícone de ajuda (`HelpTooltip`) com uma explicação curta e um exemplo. A
+ícone de ajuda (`HelpTooltip`) com uma explicação curta; alguns trazem
+também um exemplo. A
 página Ajuda (`/ajuda`) traz o passo a passo de uso e as fórmulas completas
 com exemplos numéricos.
 
@@ -188,7 +205,9 @@ direção oposta das outras duas (correlação de Spearman −0,72 com o custo e
 +0,66 com o giro): peças caras e paradas costumam ter estoque mais próximo
 do mínimo. Com peso igual, essa dimensão anulava as outras, o score se
 concentrava em torno de 0,5 e 48 de 56 produtos caíam em "Prioridade
-Média" — concordância de só 46% com os grupos do K-Means.
+Média" — concordância de só 46% com os grupos do K-Means. Esses números vêm
+da análise feita com os pesos antigos: o notebook atual usa os pesos 40/40/20,
+não calcula a correlação e mantém os 46% apenas como nota histórica.
 
 Decisão: custo e giro passam a ter 40% cada e o nível de estoque vira
 critério secundário (20%). Justificativa conceitual: o giro já mede o
@@ -208,6 +227,11 @@ calculada no upload, então é preciso reimportar o CSV.
   pessoa com acesso à URL do frontend pode importar dados e ver os
   resultados.
 - Sem integração direta com ERP — depende de exportação manual de CSV.
+- Um CSV com quebra de linha só em CR (formato antigo de Mac) não é lido: o
+  parser levanta um erro não tratado e a API responde com um 500 genérico.
+- A gravação da importação não é atômica: uma falha no meio mantém as linhas
+  já gravadas, e uma falha ao criar ou finalizar o registro não marca a
+  importação como `falhou` (ver `DOCUMENTACAO-TECNICA.md`, seção 6.1).
 - Supabase no plano gratuito pausa o projeto após período de inatividade,
   o que derruba a conexão do backend até o projeto ser reativado
   manualmente no painel.
@@ -222,12 +246,13 @@ calculada no upload, então é preciso reimportar o CSV.
 ## 7. Testes
 
 - Backend: `pytest` (`backend/tests/`), cobrindo parsing de CSV
-  (encoding, delimitador, formato decimal, campos obrigatórios), cálculo de
-  custo gerencial, giro, classificação e desconto máximo, e a API de
-  importação de ponta a ponta.
+  (encoding, delimitador, formato decimal, valores ambíguos, campos obrigatórios), cálculo de
+  custo gerencial, giro, classificação e desconto máximo, e os endpoints de
+  importação, com o acesso ao Supabase substituído por mocks.
 - Frontend: Vitest + Testing Library (`frontend/src/App.test.tsx` e
   `frontend/src/pages/*.test.tsx`), cobrindo a renderização do layout, a
   tela de Upload (envio do CSV com resumo e erros por linha, estado sem
   importação e resumo da última importação salva) e a tela de Produtos
   (listagem e filtro por classificação).
-- Metas de cobertura definidas no README: ≥75% backend, ≥25% frontend.
+- Metas de cobertura: ≥75% backend, ≥25% frontend. Resultados em
+  [`DOCUMENTACAO-TECNICA.md`](DOCUMENTACAO-TECNICA.md#7-testes-e-qualidade).

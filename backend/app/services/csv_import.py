@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import csv
 import io
+import re
 from dataclasses import dataclass, field
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
@@ -13,6 +14,12 @@ COLUNAS_OBRIGATORIAS = (
     "quantidade_estoque_atual",
     "custo_aquisicao_unitario",
 )
+
+# Formatos aceitos: BR ("1.234,56", "1234,56") ou decimal com ponto ("1234.56").
+MOEDA_VALIDA = re.compile(r"-?(?:\d+|\d{1,3}(?:\.\d{3})+),\d+|-?\d+(?:\.\d+)?")
+# "1.234" ou "1,234" podem ser milhar ou decimal. Começar por zero ("0.125")
+# não é ambíguo, porque milhar não começa por zero.
+MOEDA_AMBIGUA = re.compile(r"-?[1-9]\d{0,2}[.,]\d{3}")
 
 
 @dataclass
@@ -70,9 +77,13 @@ def _parse_moeda(valor: str) -> Decimal:
     limpo = valor.strip().replace("R$", "").strip()
     if not limpo:
         raise ValueError("valor monetário vazio")
+    # Recusa em vez de adivinhar: um valor lido errado distorceria custo,
+    # classificação e desconto sem nenhum aviso.
+    if MOEDA_AMBIGUA.fullmatch(limpo) or not MOEDA_VALIDA.fullmatch(limpo):
+        raise ValueError(f"valor monetário '{valor.strip()}' ambíguo ou inválido: use 1.234,56 ou 1234.56")
     # Formato BR ("R$ 1.234,50"): vírgula é o decimal, ponto é separador de
-    # milhar. Sem vírgula, assume-se que o ponto (se houver) já é o decimal
-    # (formato exportado por planilhas em locale EUA/UK, ex.: "18.5").
+    # milhar. Sem vírgula, o ponto (se houver) já é o decimal (formato
+    # exportado por planilhas em locale EUA/UK, ex.: "18.5").
     if "," in limpo:
         limpo = limpo.replace(".", "").replace(",", ".")
     return Decimal(limpo)

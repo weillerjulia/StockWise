@@ -29,7 +29,8 @@ diferenciação de perfis/permissões.
 4. Backend decodifica o arquivo (UTF-8 → CP1252 → Mac Roman) e detecta o
    delimitador (`;`, `,` ou tab) automaticamente.
 5. Para cada linha do CSV: valida campos obrigatórios, converte datas
-   (`dd/mm/aaaa`), valores monetários (BR ou US) e percentuais.
+   (`dd/mm/aaaa`), valores monetários (como `R$ 1.234,56` ou `1234.56`) e
+   percentuais.
 6. Para cada linha válida: calcula custo gerencial composto, giro (30/90/180
    dias), classificação de prioridade (relativa às demais linhas do mesmo
    arquivo) e desconto máximo sugerido.
@@ -41,10 +42,13 @@ diferenciação de perfis/permissões.
    (número da linha + mensagem).
 
 **Fluxos alternativos / erro:**
-- **Encoding não reconhecido**: arquivo não decodifica em nenhuma das 3
-  codificações suportadas → API retorna 400 com
-  "não foi possível decodificar o arquivo (esperado UTF-8, CP1252 ou Mac
-  Roman)"; nenhuma linha é processada.
+- **Arquivo em outra codificação**: não há erro de decodificação, porque o
+  Mac Roman aceita qualquer byte. O arquivo é processado e os acentos podem
+  ficar incorretos.
+- **Valor monetário ambíguo ou malformado** (ex.: `1.234`, `1,234` ou
+  `1,234.50`): linha é marcada com erro ("valor monetário '`<valor>`' ambíguo
+  ou inválido: use 1.234,56 ou 1234.56") e não é importada; as demais linhas
+  continuam sendo processadas.
 - **Campo obrigatório vazio**: linha é marcada com erro
   ("campo obrigatório '`<coluna>`' vazio") e não é importada; as demais
   linhas do arquivo continuam sendo processadas normalmente.
@@ -53,9 +57,14 @@ diferenciação de perfis/permissões.
 - **Código de produto duplicado no mesmo arquivo**: primeira ocorrência é
   importada, as seguintes são marcadas com erro
   ("produto '`<codigo>`' duplicado no arquivo").
-- **Falha ao gravar no banco** (ex.: Supabase indisponível ou projeto
-  pausado): importação inteira é marcada como `falhou`, API retorna 500
-  ("falha ao gravar importação no banco").
+- **Falha ao criar o registro da importação** (ex.: Supabase indisponível
+  ou projeto pausado): nenhuma importação é registrada e a API retorna um
+  erro 500 genérico.
+- **Falha ao gravar as linhas**: importação é marcada como `falhou`, API
+  retorna 500 ("falha ao gravar importação no banco") e as linhas já gravadas
+  permanecem no banco.
+- **Falha ao finalizar a importação**: as linhas já estão gravadas, mas a
+  importação fica como `processando` e a API retorna um erro 500 genérico.
 - **Arquivo com todas as linhas inválidas**: importação é registrada com
   status `concluida_com_erros` e zero linhas importadas — não é tratado
   como falha total do sistema.
@@ -106,7 +115,8 @@ salvo no `localStorage` do navegador (UC01 já executado nesse navegador).
    itens ver por página (10, 25, 50 ou 100). Mudar a busca, o filtro ou a
    quantidade por página volta para a página 1.
 8. Gestor passa o mouse (ou o foco do teclado) no ícone de interrogação de
-   uma coluna para ver o que a métrica significa, com um exemplo.
+   uma coluna para ver o que a métrica significa e, na maioria das colunas,
+   um exemplo.
 
 **Fluxos alternativos / erro:**
 - **Nenhuma importação registrada ainda** (sem `id` no `localStorage`):
@@ -182,7 +192,8 @@ salvo no `localStorage`.
    usados no UC03; todos os indicadores são calculados no navegador.
 3. Tela exibe um resumo em texto: quantos produtos estão em Prioridade
    Alta, o valor imobilizado neles e o potencial de recuperação com os
-   descontos sugeridos.
+   descontos sugeridos, calculado sobre todos os produtos da importação, não
+   só os de Prioridade Alta.
 4. Tela exibe 8 indicadores, cada um com um ícone de interrogação que
    explica o cálculo:
    - **Total de produtos** analisados na importação;

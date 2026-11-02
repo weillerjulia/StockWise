@@ -2,8 +2,9 @@
 
 > Documento de estudo para quem vai ler, manter ou evoluir o código do
 > StockWise pela primeira vez. Cobre visão geral, estrutura de pastas, banco
-> de dados, backend, frontend e os fluxos principais do sistema, com
-> exemplos reais extraídos do repositório.
+> de dados, backend, frontend, os fluxos principais do sistema e os
+> resultados de testes e qualidade, com exemplos reais extraídos do
+> repositório.
 >
 > Complementa (não substitui) [`README.md`](../README.md),
 > [`docs/RFC.md`](RFC.md) e [`docs/casos-de-uso.md`](casos-de-uso.md).
@@ -42,20 +43,27 @@ O StockWise responde a essas três perguntas calculando, para cada produto:
 ### 1.2 Stack tecnológica
 
 **Backend**
-- Python 3.11+, [FastAPI](https://fastapi.tiangolo.com/), Uvicorn (servidor ASGI)
+- Python 3.14 (versão usada no CI), [FastAPI](https://fastapi.tiangolo.com/), Uvicorn (servidor ASGI)
 - `pydantic-settings` — configuração via `.env`
 - `python-multipart` — necessário para receber upload de arquivo (`UploadFile`)
 - Parsing de CSV com o módulo padrão `csv` (não usa pandas na API)
 - `supabase` (cliente Python) — acesso ao Postgres via API REST do Supabase
 - `pytest` + `httpx` (`TestClient`) — testes automatizados
+- `pytest-cov` — cobertura de testes
 
 **Frontend**
+- Node.js 24 (versão usada no CI)
 - React 19 + TypeScript, [Vite](https://vitejs.dev/) (dev server/build)
 - `react-router-dom` v7 — roteamento entre telas
 - Tailwind CSS v4 — estilização utilitária
 - `lucide-react` — ícones
 - `recharts` — gráficos do dashboard
 - `vitest` + `@testing-library/react` — testes de componentes
+- `@vitest/coverage-v8` — cobertura de testes
+
+**Qualidade e CI**
+- GitHub Actions — testes, cobertura e build a cada push ou pull request
+- SonarQube Cloud — análise estática e cobertura
 
 **Análise exploratória** (isolada, fora do fluxo web)
 - Jupyter Notebook, `pandas`, `scikit-learn` (K-Means,
@@ -104,6 +112,8 @@ nesta fase — é um PoC de usuário único, sem multi-tenant.
 
 ```
 StockWise/
+├── .github/workflows/ci.yml     # CI: testes, cobertura, build e SonarCloud
+├── sonar-project.properties     # configuração da análise do SonarCloud
 ├── backend/
 │   ├── app/
 │   │   ├── main.py              # cria o FastAPI app, registra CORS e routers
@@ -126,21 +136,27 @@ StockWise/
 │   ├── analysis/
 │   │   ├── clustering_kmeans.ipynb  # notebook standalone de K-Means
 │   │   └── requirements.txt
-│   ├── tests/                    # testes pytest, um arquivo por módulo de serviço
+│   ├── tests/                    # testes pytest dos cálculos, do CSV e das rotas (repositório via mocks)
+│   ├── .env.example              # modelo das variáveis de ambiente
+│   ├── .coveragerc               # configuração da cobertura
 │   ├── requirements.txt
 │   └── pytest.ini
 │
 ├── frontend/
+│   ├── .env.example               # modelo das variáveis de ambiente
 │   └── src/
 │       ├── main.tsx               # ponto de entrada (ReactDOM.createRoot)
 │       ├── App.tsx                # define as rotas (react-router-dom)
+│       ├── App.test.tsx           # teste do layout
+│       ├── index.css              # estilos globais
+│       ├── setupTests.ts          # configuração dos testes
 │       ├── api/
 │       │   ├── client.ts          # funções fetch para a API (uploadCsv, etc.)
 │       │   ├── types.ts           # tipos TypeScript espelhando o payload da API
 │       │   └── storage.ts         # leitura/escrita do id da última importação no localStorage
 │       ├── hooks/
 │       │   └── useResultadosUltimaImportacao.ts  # hook que busca os resultados da última importação
-│       ├── pages/                 # uma tela por rota
+│       ├── pages/                 # uma tela por rota (e os testes *.test.tsx de Upload e Produtos)
 │       │   ├── UploadPage.tsx     # rota "/" — upload do CSV
 │       │   ├── DashboardPage.tsx  # rota "/dashboard" — indicadores agregados
 │       │   ├── ProdutosPage.tsx   # rota "/produtos" — tabela de produtos
@@ -170,7 +186,8 @@ O schema completo está em [`backend/db/schema.sql`](../backend/db/schema.sql)
 e é aplicado manualmente no SQL Editor do Supabase. São **4 tabelas**,
 deliberadamente separadas em dado descritivo, dado bruto importado e dado
 calculado (ver RFC seção 5.2) — isso permite manter histórico entre
-importações e reprocessar cálculos sem reimportar o CSV.
+importações e deixa o modelo pronto para um futuro reprocessamento sem
+reimportar o CSV. Esse reprocessamento ainda não existe no código.
 
 ### 3.1 Tabela `produtos`
 
@@ -265,9 +282,10 @@ pelo `unique` na FK).
 - `produtos` **1 : N** `estoque_snapshots` — um produto pode aparecer em
   vários snapshots ao longo de importações diferentes (histórico). FK:
   `estoque_snapshots.produto_id → produtos.id`.
-- `estoque_snapshots` **1 : 1** `resultados_analise` — cada snapshot tem
-  exatamente um resultado calculado. FK: `resultados_analise.estoque_snapshot_id → estoque_snapshots.id`
-  (marcada `unique`, o que transforma a relação de 1:N em 1:1).
+- `estoque_snapshots` **1 : 0..1** `resultados_analise` — o fluxo de
+  importação grava um resultado por snapshot, mas o schema permite snapshot
+  sem resultado (ex.: falha no meio da gravação). FK: `resultados_analise.estoque_snapshot_id → estoque_snapshots.id`
+  (marcada `unique`, o que limita a relação a no máximo um resultado).
 - Não há relação N:N no schema.
 
 Todas as FKs têm `on delete cascade`: apagar uma importação apaga seus
@@ -314,12 +332,15 @@ erDiagram
         integer qtd_vendida_180d
         numeric custo_armazenagem_percentual_mensal
         numeric taxa_custo_oportunidade_anual
+        timestamptz criado_em
     }
 
     RESULTADOS_ANALISE {
         uuid id PK
         uuid estoque_snapshot_id FK
         integer dias_em_estoque
+        numeric custo_armazenagem_calculado
+        numeric custo_oportunidade_calculado
         numeric custo_gerencial_composto
         numeric giro_30d
         numeric giro_90d
@@ -328,11 +349,12 @@ erDiagram
         numeric score_prioridade
         numeric desconto_maximo_percentual
         numeric desconto_maximo_valor
+        timestamptz calculado_em
     }
 
     IMPORTACOES ||--o{ ESTOQUE_SNAPSHOTS : "gera (1:N)"
     PRODUTOS ||--o{ ESTOQUE_SNAPSHOTS : "aparece em (1:N)"
-    ESTOQUE_SNAPSHOTS ||--|| RESULTADOS_ANALISE : "tem (1:1)"
+    ESTOQUE_SNAPSHOTS ||--o| RESULTADOS_ANALISE : "tem (0 ou 1)"
 ```
 
 ---
@@ -363,10 +385,10 @@ Recebe o upload do CSV e dispara todo o pipeline de cálculo (ver seção 6.1).
     "erros": [{"linha": 15, "mensagem": "campo obrigatório 'nome_produto' vazio"}]
   }
   ```
-- **Resposta 400**: arquivo não decodificável (nenhuma das codificações
-  suportadas funcionou) — `{"detail": "não foi possível decodificar..."}`
-- **Resposta 500**: falha ao gravar no Supabase — a importação é marcada
-  como `falhou` no banco antes do erro ser propagado.
+- **Resposta 400**: a rota trata a falha de decodificação, mas ela não
+  ocorre com a cadeia atual, porque `mac_roman` aceita qualquer byte.
+- **Resposta 500**: falha ao gravar no Supabase. O corpo da resposta e o
+  status da importação dependem de onde a falha ocorre (ver seção 6.1).
 
 #### `GET /importacoes/{importacao_id}/resultados`
 Retorna todos os resultados calculados de uma importação, com os dados do
@@ -473,7 +495,7 @@ diferentes; sem isso o navegador bloqueia as respostas da API.
 5.11 e 6): o sistema é aberto, sem login, e qualquer pessoa com acesso à URL do frontend pode importar dados e ver
 os resultados. Não há diferenciação de usuários/perfis — o único "estado
 de sessão" é o `id` da última importação, guardado no `localStorage` do
-navegador (ver seção 4.5/5.2).
+navegador (ver seção 5.2).
 
 ---
 
@@ -488,7 +510,7 @@ conteúdo):
 | Rota | Página | O que faz |
 |---|---|---|
 | `/` | [`UploadPage.tsx`](../frontend/src/pages/UploadPage.tsx) | Formulário de upload do CSV (drag-and-drop ou clique), mostra o formato esperado, o resumo pós-upload (linhas totais/importadas/com erro + tabela de erros por linha) e um resumo da última importação salva |
-| `/dashboard` | [`DashboardPage.tsx`](../frontend/src/pages/DashboardPage.tsx) | KPIs agregados (valor imobilizado total/crítico, potencial de recuperação, risco de ruptura, giro médio), gráfico de barras por classificação, mapa de prioridade (dispersão giro × custo), gráfico de valor imobilizado por categoria, top 5 por custo e top 5 parados há mais tempo |
+| `/dashboard` | [`DashboardPage.tsx`](../frontend/src/pages/DashboardPage.tsx) | KPIs agregados (valor imobilizado total/crítico, potencial de recuperação, risco de ruptura, giro médio), gráfico de barras por classificação, mapa de prioridade (dispersão giro × custo), gráfico de valor imobilizado por categoria, top 5 por custo e top 5 parados há mais tempo. Os indicadores em R$ somam valores por unidade, sem multiplicar pela quantidade em estoque (RFC seção 6) |
 | `/produtos` | [`ProdutosPage.tsx`](../frontend/src/pages/ProdutosPage.tsx) | Tabela paginada de produtos com busca por nome/código, filtro por classificação, ordenação por coluna (custo, giro, desconto) e exportação para CSV |
 | `/ajuda` | [`AjudaPage.tsx`](../frontend/src/pages/AjudaPage.tsx) | Explicação didática (com fórmulas e exemplos numéricos) de cada indicador calculado pelo backend e resumo da validação da classificação com K-Means |
 
@@ -565,11 +587,14 @@ Este é o fluxo central do sistema (UC01 em [`casos-de-uso.md`](casos-de-uso.md)
    envia um `POST /importacoes` com `multipart/form-data`.
 2. **Backend — decodificação** (`csv_import._decodificar`) — tenta `utf-8-sig`,
    depois `cp1252`, depois `mac_roman`, nessa ordem (o último nunca falha,
-   por isso vem por último). Falha nas três → `HTTPException(400)`.
+   por isso vem por último). Na prática, não há erro de decodificação: um
+   arquivo em outra codificação pode ser importado com acentos incorretos.
 3. **Backend — detecção de formato** (`csv_import._detectar_delimitador`,
    `_parse_moeda`) — usa `csv.Sniffer` para achar o delimitador (`;`, `,`
    ou tab) e decide se o valor monetário está em formato BR (`R$ 1.234,56`)
-   ou US (`18.5`) olhando se há vírgula no valor.
+   ou decimal com ponto (`18.5`) olhando se há vírgula no valor. Valores
+   ambíguos ou malformados (`1.234`, `1,234`, `1,234.50`) são recusados e
+   entram como erro da linha.
 4. **Backend — validação linha a linha** (`csv_import._validar_linha`) —
    confere os 5 campos obrigatórios (`codigo_produto`, `nome_produto`,
    `data_entrada_estoque`, `quantidade_estoque_atual`,
@@ -589,11 +614,19 @@ Este é o fluxo central do sistema (UC01 em [`casos-de-uso.md`](casos-de-uso.md)
 6. **Backend — persistência** (`importacoes_repository.py`) — cria o
    registro em `importacoes` (status `processando`), depois para cada
    linha: `upsert_produto` (por `codigo_produto`) → `inserir_snapshot`
-   (dado bruto do CSV) → `inserir_resultado_analise` (dado calculado). Se
-   qualquer gravação falhar, a importação inteira é marcada `falhou` e a
-   API responde 500. Ao final, `finalizar_importacao` grava o resumo
-   (`total_linhas`, `linhas_importadas`, `erros`) e o status final
-   (`concluida` ou `concluida_com_erros`).
+   (dado bruto do CSV) → `inserir_resultado_analise` (dado calculado). Ao
+   final, `finalizar_importacao` grava o resumo (`total_linhas`,
+   `linhas_importadas`, `erros`) e o status final (`concluida` ou
+   `concluida_com_erros`). A gravação não é atômica, e o resultado de uma
+   falha depende de onde ela ocorre:
+   - **Ao criar o registro** (ex.: Supabase fora do ar ou pausado): nenhuma
+     importação é registrada e a API responde com um erro 500 genérico.
+   - **Durante a gravação das linhas:** a importação é marcada como `falhou`
+     e a API responde 500 (`falha ao gravar importação no banco`). As linhas
+     já gravadas permanecem no banco. Se a marcação também falhar, o status
+     fica `processando` e o erro 500 é genérico.
+   - **Ao finalizar:** todas as linhas já foram gravadas, mas a importação
+     fica como `processando` e a API responde com um erro 500 genérico.
 7. **Frontend** — recebe o resumo da resposta, chama
    `salvarUltimaImportacaoId(resposta.id)` (grava no `localStorage`) e
    renderiza o resumo (contagens + tabela de erros, se houver).
@@ -622,8 +655,8 @@ Corresponde aos UC03 e UC06.
    `LinhaProduto[]` e depois filtrados (busca por nome/código, filtro por
    classificação) e ordenados (por custo, giro ou desconto), tudo com
    `useMemo` no navegador. Em `DashboardPage`, os mesmos dados alimentam os
-   agregados (soma de custo por classificação, valor imobilizado, top 5
-   etc.) e os gráficos `recharts`.
+   agregados (contagem por classificação, valor imobilizado total, crítico
+   e por categoria, top 5 etc.) e os gráficos `recharts`.
 
 ### 6.3 Fluxo 3 — Cálculo do desconto máximo sugerido (precificação)
 
@@ -631,8 +664,8 @@ Corresponde ao UC04 — ilustra como uma regra de negócio isolada
 (`desconto_maximo.py`) depende do resultado de outra (`custo_gerencial.py`)
 dentro do pipeline do Fluxo 1.
 
-1. Pré-condição: o custo gerencial composto do produto já foi calculado na
-   etapa 2 do Fluxo 1.
+1. Pré-condição: o custo gerencial composto do produto já foi calculado no
+   passo 5 do Fluxo 1.
 2. `calcular_desconto_maximo` recebe `custo_gerencial_composto` e
    `preco_venda_unitario` (pode ser `None`, se a coluna vier vazia no CSV).
 3. Se não há preço de venda → resultado é `(None, None)` — a tabela de
@@ -658,10 +691,97 @@ mínimo = R$ 22,69 × 1,10 = R$ 24,96 → desconto máximo = R$ 34,90 − R$ 24,
 
 ---
 
+## 7. Testes e Qualidade
+
+Resultados da execução de 02/11/2026, já com a validação de valores monetários. Os números mudam conforme
+o código evolui.
+
+### 7.1 Resumo
+
+| Parte | Ferramenta | Testes | Linhas | Meta | Situação |
+|---|---|---|---|---|---|
+| Backend | pytest + pytest-cov | 35 aprovados, 0 falhas | 90% | ≥ 75% | Atingida |
+| Frontend | Vitest + coverage-v8 | 6 aprovados, 0 falhas | 46,92% | ≥ 25% | Atingida |
+
+O build do frontend (`npm run build`) também concluiu sem erros.
+
+### 7.2 Backend
+
+| Arquivo de teste | Testes | O que verifica |
+|---|---|---|
+| `test_csv_import.py` | 10 | Leitura do CSV: encoding, delimitador, formato decimal, valores ambíguos e campos obrigatórios |
+| `test_importacoes_api.py` | 6 | Endpoints de importação, com o repositório substituído por mocks |
+| `test_classificacao_estoque.py` | 6 | Classificação Alta/Média/Baixa |
+| `test_desconto_maximo.py` | 5 | Desconto máximo |
+| `test_custo_gerencial.py` | 4 | Custo gerencial composto |
+| `test_giro_estoque.py` | 3 | Giro de estoque |
+| `test_health.py` | 1 | `GET /health` |
+
+| Módulo | Cobertura de linhas |
+|---|---|
+| `custo_gerencial.py`, `giro_estoque.py`, `classificacao_estoque.py`, `desconto_maximo.py` | 100% |
+| `csv_import.py` | 95% |
+| `api/importacoes.py` | 89% |
+| `db/supabase_client.py` | 56% |
+| `importacoes_repository.py` | 42% |
+
+A cobertura mais baixa está nos dois módulos que acessam o Supabase, porque os
+testes não usam o banco.
+
+### 7.3 Frontend
+
+| Arquivo de teste | Testes | O que verifica |
+|---|---|---|
+| `UploadPage.test.tsx` | 3 | Envio do CSV, estado sem importação e resumo da última importação |
+| `ProdutosPage.test.tsx` | 2 | Listagem e filtro por classificação |
+| `App.test.tsx` | 1 | Renderização do layout |
+
+| Arquivo | Cobertura de linhas |
+|---|---|
+| `UploadPage.tsx` | 81,39% |
+| `ProdutosPage.tsx` | 61,4% |
+| `AjudaPage.tsx` | 25% |
+| `DashboardPage.tsx` | 4,83% |
+| `exportCsv.ts` | 0% |
+
+Total do frontend: 43,75% das instruções, 38,58% dos desvios, 37,16% das
+funções e 46,92% das linhas.
+
+### 7.4 SonarQube Cloud
+
+| Indicador | Resultado | Medido em |
+|---|---|---|
+| Cobertura do projeto | 63,2% | Análise pelo CI (`d66e26c`) |
+| Duplicação | 0,0% | Análise automática (`aa204fd`) |
+| Segurança | 7 questões em aberto, nota C | Análise automática (`aa204fd`) |
+| Confiabilidade | 5 questões em aberto, nota C | Análise automática (`aa204fd`) |
+| Manutenibilidade | 4 questões em aberto, nota A | Análise automática (`aa204fd`) |
+
+As questões em aberto ainda não foram revisadas. A cobertura do Sonar tem valor
+diferente das tabelas acima porque reúne backend e frontend e também considera
+as condições do código.
+
+### 7.5 Integração contínua
+
+O workflow [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) roda a cada
+push ou pull request para `main` e `development`:
+
+1. **Backend:** testes e cobertura; falha abaixo de 75%.
+2. **Frontend:** testes e cobertura, falha abaixo de 25% das linhas, e build.
+3. **SonarCloud:** envia a análise e os relatórios de cobertura.
+
+### 7.6 O que estes resultados não cobrem
+
+- Acesso real ao Supabase e fluxo completo entre frontend, backend e banco.
+- Telas e funções sem testes dedicados, como o Dashboard e a exportação de CSV.
+- Validação dos cálculos com dados reais ou simulados.
+
+---
+
 ## Referências
 
 - Código-fonte: [`backend/app/`](../backend/app/), [`frontend/src/`](../frontend/src/)
 - Schema SQL: [`backend/db/schema.sql`](../backend/db/schema.sql)
-- Testes: [`backend/tests/`](../backend/tests/), `frontend/src/pages/*.test.tsx`
+- Testes: [`backend/tests/`](../backend/tests/), `frontend/src/App.test.tsx`, `frontend/src/pages/*.test.tsx`
 - Decisões técnicas e trade-offs: [`docs/RFC.md`](RFC.md)
 - Casos de uso detalhados: [`docs/casos-de-uso.md`](casos-de-uso.md)

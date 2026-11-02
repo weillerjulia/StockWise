@@ -119,16 +119,16 @@ export default function UploadPage() {
 
           <div className="mt-4 space-y-3 text-sm text-slate-600">
             <p>
-              <span className="font-medium text-slate-700">Delimitador:</span> ponto e vírgula (
-              <code className="rounded bg-slate-100 px-1 py-0.5 text-xs">;</code>)
+              <span className="font-medium text-slate-700">Delimitador:</span> ponto e vírgula, vírgula
+              ou tab (detectado automaticamente)
             </p>
             <p>
               <span className="font-medium text-slate-700">Datas:</span> formato dd/mm/aaaa (ex:
               02/10/2025)
             </p>
             <p>
-              <span className="font-medium text-slate-700">Valores monetários:</span> em R$ com vírgula
-              decimal (ex: R$ 18,50)
+              <span className="font-medium text-slate-700">Valores monetários:</span> R$ 1.234,56,
+              1234,56 ou 1234.56. Valores ambíguos, como 1.234 ou 1,234.50, são recusados.
             </p>
             <div>
               <p className="text-xs font-medium tracking-wide text-slate-500 uppercase">Obrigatórias</p>

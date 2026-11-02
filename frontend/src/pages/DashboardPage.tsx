@@ -205,7 +205,7 @@ export default function DashboardPage() {
         <KpiCard
           label="Giro médio geral (90d)"
           valor={giroMedioGeral != null ? formatarNumero(giroMedioGeral) : "-"}
-          ajuda="Média do giro de 90 dias de todos os produtos. Ex: 2,26 = em média, o estoque girou pouco mais de 2x."
+          ajuda="Média do giro de 90 dias, projetado para um ano. Ex: 2,26 = nesse ritmo, o estoque giraria pouco mais de 2x por ano."
           alinharAjuda="direita"
         />
       </div>

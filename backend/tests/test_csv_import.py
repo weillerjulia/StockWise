@@ -101,6 +101,48 @@ def test_arquivo_codificado_em_mac_roman_e_decodificado_corretamente():
     assert resultado.linhas_validas[0].nome_produto == "Filtro de óleo motor 1.0/1.6"
 
 
+def _linha_com_custo(custo: str, codigo: str = "AP-1001") -> str:
+    return f"{codigo};Filtro;Motor;Filora;02/10/2025;28/07/2026;42;15;{custo};R$ 34,90;22;61;118;1,2;12"
+
+
+def test_valores_monetarios_em_formato_claro_sao_lidos_corretamente():
+    casos = {
+        "R$ 1.234,56": "1234.56",
+        "1.234.567,89": "1234567.89",
+        "1234,56": "1234.56",
+        "1234.56": "1234.56",
+        "18.5": "18.5",
+        "1234": "1234",
+        "0.125": "0.125",
+        "1000.000": "1000.000",
+    }
+
+    for valor, esperado in casos.items():
+        resultado = processar_csv(_csv(_linha_com_custo(valor)))
+
+        assert resultado.erros == [], valor
+        assert str(resultado.linhas_validas[0].custo_aquisicao_unitario) == esperado
+
+
+def test_valor_monetario_ambiguo_ou_invalido_gera_erro_e_nao_e_importado():
+    for valor in ["1.234", "1,234", "12.345", "1,234.50", "1.234.567", "12.34,56", "abc", "NaN"]:
+        resultado = processar_csv(_csv(_linha_com_custo(valor)))
+
+        assert resultado.linhas_validas == [], valor
+        assert len(resultado.erros) == 1
+        assert valor in resultado.erros[0].mensagem
+
+
+def test_valor_ambiguo_no_preco_nao_impede_as_demais_linhas():
+    linha_preco_ambiguo = LINHA_AP_1001.replace("AP-1001", "AP-1002").replace("R$ 34,90", "1.234")
+
+    resultado = processar_csv(_csv(linha_preco_ambiguo, LINHA_AP_1001))
+
+    assert [linha.codigo_produto for linha in resultado.linhas_validas] == ["AP-1001"]
+    assert resultado.erros[0].linha == 2
+    assert "1.234" in resultado.erros[0].mensagem
+
+
 def test_campos_opcionais_ausentes_recebem_valores_padrao():
     linha_minima = "AP-1006;Bomba de combustível elétrica;;;18/02/2025;;9;;R$ 185,00;;;;;;"
 
