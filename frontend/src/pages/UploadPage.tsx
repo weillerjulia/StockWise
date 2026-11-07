@@ -1,5 +1,5 @@
 import { UploadCloud } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 import KpiCard from "../components/KpiCard";
 import { getImportacao, uploadCsv } from "../api/client";
@@ -70,7 +70,6 @@ export default function UploadPage() {
   const [ultimaImportacao, setUltimaImportacao] = useState<EstadoUltimaImportacao>({
     status: "carregando",
   });
-  const inputRef = useRef<HTMLInputElement>(null);
 
   async function carregarUltimaImportacao() {
     const id = obterUltimaImportacaoId();
@@ -89,7 +88,7 @@ export default function UploadPage() {
   }
 
   useEffect(() => {
-    carregarUltimaImportacao();
+    void carregarUltimaImportacao();
   }, []);
 
   async function handleSubmit(evento: React.FormEvent<HTMLFormElement>) {
@@ -163,8 +162,9 @@ export default function UploadPage() {
           <label htmlFor="arquivo-csv" className="sr-only">
             Arquivo CSV do ERP
           </label>
-          <div
-            onClick={() => inputRef.current?.click()}
+          {/* Label nativo: o clique abre o seletor de arquivo sem precisar de onClick. */}
+          <label
+            htmlFor="arquivo-csv"
             onDragOver={(evento) => {
               evento.preventDefault();
               setArrastando(true);
@@ -188,14 +188,13 @@ export default function UploadPage() {
               {arquivo ? arquivo.name : "Nenhum arquivo selecionado"}
             </span>
             <input
-              ref={inputRef}
               id="arquivo-csv"
               type="file"
               accept=".csv"
               onChange={(evento) => setArquivo(evento.target.files?.[0] ?? null)}
               className="sr-only"
             />
-          </div>
+          </label>
 
           <div className="mt-4 flex justify-center">
             <button

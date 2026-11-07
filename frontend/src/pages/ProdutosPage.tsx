@@ -253,20 +253,22 @@ export default function ProdutosPage() {
         </span>
 
         {avisoSemDesconto && (
-          <span
-            role="status"
-            tabIndex={0}
-            className="group relative inline-flex cursor-help items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800 ring-1 ring-amber-300 ring-inset"
-          >
-            <AlertTriangle size={13} aria-hidden="true" />
-            {avisoSemDesconto.rotulo}
-            <span className="sr-only"> {avisoSemDesconto.detalhe}</span>
-            <span
-              aria-hidden="true"
-              className="pointer-events-none absolute top-full left-0 z-20 mt-1.5 w-64 rounded-md bg-slate-800 px-2.5 py-1.5 text-xs font-normal text-white opacity-0 transition-opacity group-hover:opacity-100 group-focus:opacity-100"
+          // O status fica no span para leitores de tela; o botão só dá foco pelo teclado.
+          <span role="status" className="inline-flex">
+            <button
+              type="button"
+              className="group relative inline-flex cursor-help items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800 ring-1 ring-amber-300 ring-inset"
             >
-              {avisoSemDesconto.detalhe}
-            </span>
+              <AlertTriangle size={13} aria-hidden="true" />
+              {avisoSemDesconto.rotulo}
+              <span className="sr-only"> {avisoSemDesconto.detalhe}</span>
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute top-full left-0 z-20 mt-1.5 w-64 rounded-md bg-slate-800 px-2.5 py-1.5 text-left text-xs font-normal text-white opacity-0 transition-opacity group-hover:opacity-100 group-focus:opacity-100"
+              >
+                {avisoSemDesconto.detalhe}
+              </span>
+            </button>
           </span>
         )}
 

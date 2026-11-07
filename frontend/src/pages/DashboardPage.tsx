@@ -22,7 +22,7 @@ const COR_BORDA_CLASSIFICACAO: Record<Classificacao, string> = {
 };
 
 function interpolarCor(corClara: string, corEscura: string, t: number): string {
-  const paraRgb = (hex: string) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+  const paraRgb = (hex: string) => [1, 3, 5].map((i) => Number.parseInt(hex.slice(i, i + 2), 16));
   const [r1, g1, b1] = paraRgb(corClara);
   const [r2, g2, b2] = paraRgb(corEscura);
   const lerp = (a: number, b: number) => Math.round(a + (b - a) * t);

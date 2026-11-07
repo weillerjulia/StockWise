@@ -24,8 +24,8 @@ export default function SeloSemDesconto({ situacao }: { situacao: SituacaoDescon
       : { top: ancora.bottom + 6, left: ancora.left });
 
   return (
-    <span
-      tabIndex={0}
+    <button
+      type="button"
       onMouseEnter={abrir}
       onMouseLeave={fechar}
       onFocus={abrir}
@@ -38,11 +38,11 @@ export default function SeloSemDesconto({ situacao }: { situacao: SituacaoDescon
         <span
           aria-hidden="true"
           style={posicao}
-          className="pointer-events-none fixed z-20 w-60 whitespace-normal rounded-md bg-slate-800 px-2.5 py-1.5 text-xs font-normal text-white"
+          className="pointer-events-none fixed z-20 w-60 whitespace-normal rounded-md bg-slate-800 px-2.5 py-1.5 text-left text-xs font-normal text-white"
         >
           {situacao.mensagem}
         </span>
       )}
-    </span>
+    </button>
   );
 }

@@ -558,7 +558,7 @@ Execução de 07/11/2026:
 | Parte | Testes | Cobertura de linhas | Meta |
 |---|---|---|---|
 | Backend (pytest) | 35 aprovados, 0 falhas | **90%** | ≥ 75% |
-| Frontend (Vitest) | 13 aprovados, 0 falhas | **55,21%** | ≥ 25% |
+| Frontend (Vitest) | 13 aprovados, 0 falhas | **54,91%** | ≥ 25% |
 
 - **Backend:** os 4 módulos de cálculo têm 100% de cobertura, o `csv_import`
   tem 95% e as rotas, 89%. Os testes não acessam o Supabase: o repositório é
@@ -577,7 +577,7 @@ cd frontend && npm run test:coverage   # frontend
 
 <p align="center">
   <b>Frontend</b> (Vitest + Istanbul)<br/>
-  <img src="docs/prints/cobertura-frontend.png" alt="Relatório de cobertura do frontend: 55,21% das linhas" width="820"/>
+  <img src="docs/prints/cobertura-frontend.png" alt="Relatório de cobertura do frontend: 54,91% das linhas" width="820"/>
 </p>
 
 Detalhes por arquivo: [DOCUMENTACAO-TECNICA.md, seção 7](docs/DOCUMENTACAO-TECNICA.md#7-testes-e-qualidade).
@@ -591,14 +591,27 @@ para `main` e `development`:
 2. **Frontend:** testes e cobertura, falha abaixo de 25% das linhas, e build.
 3. **SonarQube Cloud:** envia a análise estática e os relatórios de cobertura.
 
-> **[A inserir]** Print de uma execução do GitHub Actions.
+<p align="center">
+  <img src="docs/prints/github-actions.png" alt="Execução do pipeline no GitHub Actions: backend, frontend e SonarCloud aprovados" width="820"/>
+</p>
 
 ### Qualidade do código
 
 Análise contínua no [SonarQube Cloud](https://sonarcloud.io/project/overview?id=weillerjulia_StockWise):
 bugs, vulnerabilidades, code smells, duplicação e cobertura.
 
-> **[A inserir]** Print do painel do SonarQube Cloud.
+<p align="center">
+  <img src="docs/prints/sonarcloud.png" alt="Painel do SonarQube Cloud: Quality Gate aprovado, 0,0% de duplicação e 67,3% de cobertura" width="820"/>
+</p>
+
+| Critério | Nota | Questões em aberto |
+|---|:---:|---|
+| Segurança | B | 3, de severidade alta |
+| Confiabilidade | C | 6, de severidade média |
+| Manutenibilidade | A | 5 |
+| Revisão de security hotspots | A | 0 |
+
+Análise do código completo (*Overall code*) em 07/11/2026.
 
 ### Privacidade e LGPD
 
@@ -663,7 +676,7 @@ compara produto a produto:
 | Diagrama de arquitetura (C4) | Contexto, Contêineres e Componentes. | [Arquitetura](#9-arquitetura) |
 | Instruções de deploy | Execução local do banco, da API e do frontend. | [Como rodar](#17-como-rodar-o-projeto) |
 | Pelo menos três fluxos de negócio completos | Importar o estoque, analisar na Visão geral e planejar a promoção. | [Fluxos de negócio](#7-fluxos-de-negócio) |
-| Cobertura de testes: 75% backend e 25% frontend | 90% no backend e 55,21% no frontend, verificados no CI. | [Testes](#13-qualidade-testes-e-privacidade) |
+| Cobertura de testes: 75% backend e 25% frontend | 90% no backend e 54,91% no frontend, verificados no CI. | [Testes](#13-qualidade-testes-e-privacidade) |
 
 ---
 
