@@ -491,69 +491,11 @@ Quatro tabelas, separando dado descritivo (`produtos`), rastreio de cada upload
 (`importacoes`), dado bruto do CSV (`estoque_snapshots`) e dado calculado
 (`resultados_analise`). Script: [backend/db/schema.sql](backend/db/schema.sql).
 
-```mermaid
-erDiagram
-    PRODUTOS {
-        uuid id PK
-        text codigo_produto UK
-        text nome_produto
-        text categoria
-        text fornecedor
-        timestamptz criado_em
-        timestamptz atualizado_em
-    }
+<p align="center">
+  <img src="docs/diagramas/modelo-dados.png" alt="Modelo de dados do StockWise" width="900"/>
+</p>
 
-    IMPORTACOES {
-        uuid id PK
-        text nome_arquivo
-        text status
-        integer total_linhas
-        integer linhas_importadas
-        integer linhas_com_erro
-        jsonb erros
-        timestamptz iniciada_em
-        timestamptz concluida_em
-    }
-
-    ESTOQUE_SNAPSHOTS {
-        uuid id PK
-        uuid importacao_id FK
-        uuid produto_id FK
-        date data_entrada_estoque
-        date data_ultima_venda
-        integer quantidade_estoque_atual
-        integer estoque_minimo
-        numeric custo_aquisicao_unitario
-        numeric preco_venda_unitario
-        integer qtd_vendida_30d
-        integer qtd_vendida_90d
-        integer qtd_vendida_180d
-        numeric custo_armazenagem_percentual_mensal
-        numeric taxa_custo_oportunidade_anual
-        timestamptz criado_em
-    }
-
-    RESULTADOS_ANALISE {
-        uuid id PK
-        uuid estoque_snapshot_id FK
-        integer dias_em_estoque
-        numeric custo_armazenagem_calculado
-        numeric custo_oportunidade_calculado
-        numeric custo_gerencial_composto
-        numeric giro_30d
-        numeric giro_90d
-        numeric giro_180d
-        text classificacao
-        numeric score_prioridade
-        numeric desconto_maximo_percentual
-        numeric desconto_maximo_valor
-        timestamptz calculado_em
-    }
-
-    IMPORTACOES ||--o{ ESTOQUE_SNAPSHOTS : "gera"
-    PRODUTOS ||--o{ ESTOQUE_SNAPSHOTS : "aparece em"
-    ESTOQUE_SNAPSHOTS ||--o| RESULTADOS_ANALISE : "tem"
-```
+Fonte do diagrama: [docs/diagramas/modelo-dados.mmd](docs/diagramas/modelo-dados.mmd).
 
 ### Pipeline de dados
 
