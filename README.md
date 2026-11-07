@@ -154,20 +154,9 @@ desconto máximo = preço de venda − preço mínimo
 **Exemplo:** preço de venda R$ 34,90 e custo gerencial R$ 22,69 → preço mínimo
 R$ 24,96 → desconto máximo de **R$ 9,94 (28,48%)**.
 
-### Funcionalidades
-
-| Funcionalidade | O que faz |
-|---|---|
-| **Importação do CSV** | Upload com arrastar e soltar. Detecta codificação (UTF-8, CP1252, Mac Roman), delimitador (`;`, `,` ou tab) e formato monetário. Recusa valores ambíguos como `1.234` e lista os erros por linha sem impedir a importação das demais. |
-| **Custo gerencial composto** | Calcula aquisição + armazenagem + custo de oportunidade, proporcionais aos dias em estoque. |
-| **Giro de estoque** | Giro anualizado em 30, 90 e 180 dias, para comparar o desempenho recente com o de médio prazo. |
-| **Classificação de prioridade** | Score relativo ao lote que combina custo gerencial (40%), giro (40%) e nível de estoque (20%). |
-| **Desconto máximo sugerido** | Maior desconto, em % e em R$, que mantém a margem mínima de 10%. Produtos sem espaço para desconto recebem o selo *Prejuízo*, *Sem margem* ou *No limite*. |
-| **Visão geral (Dashboard)** | Resumo em texto, 8 indicadores com tooltip, produtos por classificação, mapa de prioridade (giro × custo, com o quadrante "Parado e caro"), top 10 categorias e as listas dos 5 produtos mais caros e dos 5 parados há mais tempo. |
-| **Tabela de produtos** | Busca por nome ou código, filtro por classificação, ordenação, paginação e exportação da lista filtrada para CSV compatível com Excel. |
-| **Ajuda** | Passo a passo de uso, fórmulas com exemplos numéricos e resumo da validação com K-Means. |
-
 ### Telas
+
+A lista completa de funcionalidades está nos [requisitos funcionais](#requisitos-funcionais).
 
 > **[A inserir]** Prints das telas Upload, Visão geral, Produtos e Ajuda.
 
@@ -230,16 +219,6 @@ aberto, sem login nem perfis.
 <p align="center">
   <img src="docs/diagramas/casos-de-uso.png" alt="Diagrama de casos de uso do StockWise" width="820"/>
 </p>
-
-| Caso de uso | Resumo |
-|---|---|
-| UC01 · Importar CSV de estoque | Envia o CSV, que é validado, calculado e gravado. |
-| UC02 · Consultar a última importação | Vê data, linhas importadas, com erro e status. |
-| UC03 · Consultar produtos classificados | Busca, filtra, ordena e pagina a tabela de produtos. |
-| UC04 · Consultar desconto máximo sugerido | Estende o UC03: consulta o desconto de um produto. |
-| UC05 · Exportar a lista de produtos | Estende o UC03: baixa a lista filtrada em CSV. |
-| UC06 · Visualizar indicadores no dashboard | Analisa indicadores, gráficos e mapa de prioridade. |
-| UC07 · Consultar a ajuda | Lê o passo a passo, as fórmulas e a validação K-Means. |
 
 Fluxos principais e alternativos de cada caso: [docs/casos-de-uso.md](docs/casos-de-uso.md).
 Fonte do diagrama: [docs/diagramas/casos-de-uso.puml](docs/diagramas/casos-de-uso.puml).
@@ -497,32 +476,10 @@ Quatro tabelas, separando dado descritivo (`produtos`), rastreio de cada upload
 
 Fonte do diagrama: [docs/diagramas/modelo-dados.mmd](docs/diagramas/modelo-dados.mmd).
 
-### Pipeline de dados
+### Formato do CSV
 
-A única fonte de dados é o CSV exportado do ERP da empresa.
-
-```mermaid
-%%{init: {"flowchart": {"wrappingWidth": 400}}}%%
-flowchart LR
-    erp["ERP"] --> csv[/"CSV exportado<br/>manualmente"/]
-    csv --> dec["1. Decodificação<br/><i>UTF-8, CP1252<br/>ou Mac Roman</i>"]
-    dec --> val["2. Validação<br/><i>delimitador, datas,<br/>valores, duplicados</i>"]
-    val --> calc["3. Cálculo<br/><i>custo gerencial,<br/>giro, classificação,<br/>desconto máximo</i>"]
-    calc --> db[("4. Banco<br/><i>produtos, snapshots,<br/>resultados</i>")]
-    db --> api["5. API REST<br/><i>GET resultados</i>"]
-    api --> tela["6. Telas<br/><i>Visão geral<br/>e Produtos</i>"]
-    val -. "linhas com erro" .-> rel["Resumo da<br/>importação"]
-
-    classDef etapa fill:#EAF2FB,stroke:#1E3A5F,color:#0B2540
-    classDef externo fill:#8C8C8C,stroke:#6B6B6B,color:#ffffff
-    classDef erro fill:#FDECEC,stroke:#B42318,color:#5A0E0A
-    class csv,dec,val,calc,db,api,tela etapa
-    class erp externo
-    class rel erro
-```
-
-#### Formato do CSV
-
+A única fonte de dados é o CSV exportado do ERP da empresa. O caminho do
+arquivo até o banco está no [Fluxo 1](#fluxo-1-importar-o-estoque-do-erp-uc01-uc02).
 A primeira linha deve trazer o nome das colunas.
 
 | | Colunas |
@@ -591,11 +548,8 @@ Exemplos de requisição e resposta:
 
 ### Mudanças durante o desenvolvimento
 
-- **Pesos da classificação:** a primeira versão dava peso igual (1/3) a custo,
-  giro e nível de estoque. O K-Means mostrou que o nível de estoque anulava as
-  outras dimensões (48 de 56 produtos caíam em Prioridade Média). Os pesos
-  passaram a 40% / 40% / 20%, e a concordância com o K-Means subiu de 46% para
-  cerca de 82%.
+- **Pesos da classificação:** passaram de 1/3 cada para 40% / 40% / 20% depois
+  da validação com K-Means (ver [seção 14](#validação-da-classificação-com-k-means)).
 - **Valores monetários:** valores como `1.234` eram lidos como 1,234; passaram a
   ser recusados.
 - **Usuários:** o indicador de usuário na barra superior foi removido, com a
