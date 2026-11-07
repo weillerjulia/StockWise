@@ -5,10 +5,13 @@ export const MARGEM_MINIMA_PERCENTUAL = 10;
 
 export type TipoSituacaoDesconto = "prejuizo" | "sem_margem" | "no_limite";
 
+// Todos os selos usam a mesma cor neutra, para não competir com as cores da classificação.
+const CORES_SELO = "bg-slate-50 text-slate-700 ring-slate-300";
+
 export const SELOS_DESCONTO: Record<TipoSituacaoDesconto, { rotulo: string; cores: string }> = {
-  prejuizo: { rotulo: "Prejuízo", cores: "bg-red-50 text-red-700 ring-red-300" },
-  sem_margem: { rotulo: "Sem margem", cores: "bg-amber-50 text-amber-800 ring-amber-300" },
-  no_limite: { rotulo: "No limite", cores: "bg-slate-50 text-slate-700 ring-slate-300" },
+  prejuizo: { rotulo: "Prejuízo", cores: CORES_SELO },
+  sem_margem: { rotulo: "Sem margem", cores: CORES_SELO },
+  no_limite: { rotulo: "No limite", cores: CORES_SELO },
 };
 
 export interface SituacaoDesconto {

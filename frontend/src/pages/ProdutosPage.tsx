@@ -86,9 +86,11 @@ export default function ProdutosPage() {
       .filter(([quantidade]) => quantidade > 0)
       .map(([quantidade, descricao]) => `${quantidade} ${descricao}`);
     const detalhe = new Intl.ListFormat("pt-BR", { type: "conjunction" }).format(detalhes);
-    const inicio = total === 1 ? "1 produto não permite desconto" : `${total} produtos não permitem desconto`;
 
-    return `${inicio}: ${detalhe}. Reveja o preço ou o custo antes de planejar uma promoção.`;
+    return {
+      rotulo: `${total} sem desconto`,
+      detalhe: `Sem espaço para desconto: ${detalhe}. Reveja o preço ou o custo antes de planejar uma promoção.`,
+    };
   }, [linhas]);
 
   const linhasFiltradas = useMemo(() => {
@@ -222,26 +224,51 @@ export default function ProdutosPage() {
         <label htmlFor="filtro-classificacao" className="sr-only">
           Classificação
         </label>
-        <select
-          id="filtro-classificacao"
-          value={filtroClassificacao}
-          onChange={(evento) => {
-            setFiltroClassificacao(evento.target.value as Classificacao | "todas");
-            setPaginaAtual(1);
-          }}
-          className="cursor-pointer rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:border-blue-400 focus:outline-none"
-        >
-          <option value="todas">Todas as classificações</option>
-          {OPCOES_CLASSIFICACAO.map((opcao) => (
-            <option key={opcao} value={opcao}>
-              {opcao}
-            </option>
-          ))}
-        </select>
+        <div className="relative">
+          <select
+            id="filtro-classificacao"
+            value={filtroClassificacao}
+            onChange={(evento) => {
+              setFiltroClassificacao(evento.target.value as Classificacao | "todas");
+              setPaginaAtual(1);
+            }}
+            className="cursor-pointer appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-9 pl-3 text-sm text-slate-700 focus:border-blue-400 focus:outline-none"
+          >
+            <option value="todas">Todas as classificações</option>
+            {OPCOES_CLASSIFICACAO.map((opcao) => (
+              <option key={opcao} value={opcao}>
+                {opcao}
+              </option>
+            ))}
+          </select>
+          <ChevronDown
+            className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-slate-400"
+            size={16}
+            aria-hidden="true"
+          />
+        </div>
 
         <span className="text-sm text-slate-500">
           {linhasFiltradas.length} produto{linhasFiltradas.length === 1 ? "" : "s"}
         </span>
+
+        {avisoSemDesconto && (
+          <span
+            role="status"
+            tabIndex={0}
+            className="group relative inline-flex cursor-help items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800 ring-1 ring-amber-300 ring-inset"
+          >
+            <AlertTriangle size={13} aria-hidden="true" />
+            {avisoSemDesconto.rotulo}
+            <span className="sr-only"> {avisoSemDesconto.detalhe}</span>
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute top-full left-0 z-20 mt-1.5 w-64 rounded-md bg-slate-800 px-2.5 py-1.5 text-xs font-normal text-white opacity-0 transition-opacity group-hover:opacity-100 group-focus:opacity-100"
+            >
+              {avisoSemDesconto.detalhe}
+            </span>
+          </span>
+        )}
 
         <button
           type="button"
@@ -253,16 +280,6 @@ export default function ProdutosPage() {
           Exportar Excel
         </button>
       </div>
-
-      {avisoSemDesconto && (
-        <p
-          role="status"
-          className="mt-4 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"
-        >
-          <AlertTriangle size={16} className="mt-0.5 shrink-0" aria-hidden="true" />
-          {avisoSemDesconto}
-        </p>
-      )}
 
       <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-md">
         <div className="overflow-x-auto">

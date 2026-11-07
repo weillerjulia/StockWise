@@ -113,7 +113,7 @@ describe("ProdutosPage", () => {
     return linha;
   }
 
-  it("resume na faixa de aviso os produtos sem desconto, ignorando os filtros", async () => {
+  it("resume no indicador os produtos sem desconto, ignorando os filtros", async () => {
     const usuario = userEvent.setup();
     const dados = [
       ...DADOS_MOCK,
@@ -130,14 +130,14 @@ describe("ProdutosPage", () => {
     );
 
     const aviso = await screen.findByRole("status");
-    const texto = "3 produtos não permitem desconto: 1 com prejuízo e 2 sem margem.";
+    const texto = /^3 sem desconto Sem espaço para desconto: 1 com prejuízo e 2 sem margem\./;
     expect(aviso).toHaveTextContent(texto);
 
     await usuario.selectOptions(screen.getByLabelText(/classificação/i), "Prioridade Baixa");
     expect(screen.getByRole("status")).toHaveTextContent(texto);
   });
 
-  it("não mostra a faixa de aviso quando todos os produtos permitem desconto", async () => {
+  it("não mostra o indicador quando todos os produtos permitem desconto", async () => {
     render(
       <MemoryRouter>
         <ProdutosPage />

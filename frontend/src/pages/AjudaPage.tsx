@@ -224,7 +224,7 @@ export default function AjudaPage() {
         <p className="mt-1 text-sm text-slate-600">
           Se o preço de venda não está acima do preço mínimo, não há espaço para desconto. Nesse caso,
           a tabela de Produtos mostra um selo no lugar do percentual, com a explicação ao passar o
-          mouse. Uma faixa acima da tabela resume quantos produtos estão nessa situação, e a coluna
+          mouse. Um indicador ao lado do total de produtos resume quantos estão nessa situação, e a coluna
           Observação do arquivo exportado traz a mesma explicação. Nos exemplos abaixo, o custo
           gerencial é R$ 22,69 e o preço mínimo é R$ 24,96.
         </p>
