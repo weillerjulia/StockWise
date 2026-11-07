@@ -570,7 +570,15 @@ cd backend && pytest --cov=app         # backend
 cd frontend && npm run test:coverage   # frontend
 ```
 
-> **[A inserir]** Prints dos relatórios de cobertura.
+<p align="center">
+  <b>Backend</b> (coverage.py)<br/>
+  <img src="docs/prints/cobertura-backend.png" alt="Relatório de cobertura do backend: 90%" width="520"/>
+</p>
+
+<p align="center">
+  <b>Frontend</b> (Vitest + Istanbul)<br/>
+  <img src="docs/prints/cobertura-frontend.png" alt="Relatório de cobertura do frontend: 55,21% das linhas" width="820"/>
+</p>
 
 Detalhes por arquivo: [DOCUMENTACAO-TECNICA.md, seção 7](docs/DOCUMENTACAO-TECNICA.md#7-testes-e-qualidade).
 
