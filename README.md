@@ -126,7 +126,6 @@ sem prejuízo.
   foi extraído do ERP.
 - A classificação é relativa ao lote: um produto pode mudar de faixa se os
   outros produtos do arquivo mudarem.
-- O Supabase no plano gratuito pausa o projeto após um período sem uso.
 
 A lista completa está na [RFC, seção 6](docs/RFC.md#6-limitações-conhecidas-do-poc).
 
@@ -154,20 +153,11 @@ desconto máximo = preço de venda − preço mínimo
 **Exemplo:** preço de venda R$ 34,90 e custo gerencial R$ 22,69 → preço mínimo
 R$ 24,96 → desconto máximo de **R$ 9,94 (28,48%)**.
 
-### Telas
+### Funcionalidades
 
 A lista completa de funcionalidades está nos [requisitos funcionais](#requisitos-funcionais).
 
-> **[A inserir]** Prints das telas Upload, Visão geral, Produtos e Ajuda.
-
-<!--
-Substituir pelos prints, por exemplo:
-| Upload | Visão geral |
-|---|---|
-| ![Upload](docs/telas/upload.png) | ![Visão geral](docs/telas/visao-geral.png) |
-| **Produtos** | **Ajuda** |
-| ![Produtos](docs/telas/produtos.png) | ![Ajuda](docs/telas/ajuda.png) |
--->
+> As telas foram demonstradas no vídeo abaixo. 
 
 ---
 
@@ -525,8 +515,6 @@ rodando ([seção 17](#17-como-rodar-o-projeto)):
 | `GET` | `/importacoes/{id}` | Metadados de uma importação (status, contagens, datas). `404` se não existir. |
 | `GET` | `/importacoes/{id}/resultados` | Produtos da importação com os resultados calculados embutidos. |
 
-> **[A inserir]** Print do Swagger UI.
-
 Exemplos de requisição e resposta:
 [DOCUMENTACAO-TECNICA.md, seção 4.1](docs/DOCUMENTACAO-TECNICA.md#41-endpoints-da-api).
 
@@ -613,11 +601,6 @@ bugs, vulnerabilidades, code smells, duplicação e cobertura.
 - A chave do banco fica só no `.env` do backend, que não é versionado
   (`.gitignore`). O navegador nunca recebe essa chave.
 
-### Monitoramento
-
-Como o sistema roda localmente, não há monitoramento em produção. A API expõe o
-healthcheck `GET /health` para verificar se está no ar.
-
 ---
 
 ## 14. Resultados e validação
@@ -655,11 +638,6 @@ compara produto a produto:
 | Pesos iguais (1/3 cada) | 48 de 56 em Média | 46% |
 | Pesos 40% / 40% / 20% | 13 / 28 / 15 | cerca de 82% |
 
-### Validação com o cliente
-
-> **[A inserir]** Empresa ou gestor que avaliou o sistema, como a validação foi
-> feita e o retorno recebido.
-
 ---
 
 ## 15. Aderência à linha Web
@@ -683,12 +661,11 @@ compara produto a produto:
 
 ## 16. Trabalhos futuros
 
-- Integração direta com o ERP, sem exportação manual do CSV.
+- Integração direta com o ERP.
 - Histórico e comparação entre importações.
 - Informar a data de extração do CSV no upload, para que os dias em estoque não
   dependam do dia da importação.
 - Multiplicar os indicadores em R$ pela quantidade em estoque.
-- Deixar claro na interface que a margem mínima é um acréscimo sobre o custo.
 - Gravação atômica da importação.
 - Hospedagem pública.
 
