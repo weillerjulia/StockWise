@@ -154,18 +154,6 @@ desconto máximo = preço de venda − preço mínimo
 **Exemplo:** preço de venda R$ 34,90 e custo gerencial R$ 22,69 → preço mínimo
 R$ 24,96 → desconto máximo de **R$ 9,94 (28,48%)**.
 
-### Comparação com as soluções existentes
-
-| Capacidade | ERP tradicional | Planilha manual | **StockWise** |
-|---|:---:|:---:|:---:|
-| Controle de quantidade em estoque | ✅ | ⚠️ manual | usa os dados do ERP |
-| Custo de aquisição | ✅ | ✅ | ✅ |
-| Custo de armazenagem e de oportunidade por produto | ❌ | ⚠️ manual, sujeito a erro | ✅ automático |
-| Giro em várias janelas de tempo | ⚠️ depende do ERP | ⚠️ manual | ✅ 30, 90 e 180 dias |
-| Priorização de produtos para promoção | ❌ | ❌ | ✅ Alta, Média e Baixa |
-| Desconto máximo sem prejuízo | ❌ | ⚠️ manual | ✅ por produto |
-| Explicação das fórmulas na interface | ❌ | ❌ | ✅ tooltips e página de Ajuda |
-
 ### Funcionalidades
 
 | Funcionalidade | O que faz |
@@ -266,29 +254,23 @@ cruza frontend, API e banco.
 ### Fluxo 1: Importar o estoque do ERP (UC01, UC02)
 
 ```mermaid
-%%{init: {"flowchart": {"wrappingWidth": 400}}}%%
+%%{init: {"themeVariables": {"fontSize": "13px"}, "flowchart": {"wrappingWidth": 400, "rankSpacing": 28, "nodeSpacing": 30, "padding": 8}}}%%
 flowchart TD
-    inicio(( )) --> a1["Gestor exporta o estoque do ERP em CSV"]
-    a1 --> a2["Abre a tela Upload e arrasta ou seleciona o arquivo"]
-    a2 --> a3["Clica em Importar<br/><i>Frontend envia POST /importacoes</i>"]
-    a3 --> a4["API decodifica o arquivo e<br/>detecta o delimitador"]
-    a4 --> a5["Valida a próxima linha<br/><i>campos obrigatórios, datas, valores</i>"]
-    a5 --> d1{"Linha válida?"}
-    d1 -- Não --> a6["Registra o erro com o<br/>número da linha"]
-    d1 -- Sim --> a7["Guarda a linha para o cálculo"]
-    a6 --> d2{"Há mais linhas?"}
-    a7 --> d2
-    d2 -- Sim --> a5
-    d2 -- Não --> a8["Calcula custo gerencial e giro<br/>de cada linha válida"]
-    a8 --> a9["Classifica o lote em Prioridade<br/>Alta, Média ou Baixa"]
-    a9 --> a10["Calcula o desconto máximo<br/>de cada produto"]
-    a10 --> a11["Grava produtos, snapshots e<br/>resultados no banco"]
-    a11 --> d3{"Gravou sem falha?"}
-    d3 -- Não --> a12["Tela exibe a mensagem de erro"]
-    d3 -- Sim --> a13["Finaliza a importação como<br/>concluída ou concluída com erros"]
-    a13 --> a14["Frontend salva o id da importação<br/>e exibe o resumo e os erros por linha"]
-    a12 --> fim((( )))
-    a14 --> fim
+    inicio(( )) --> a1["Gestor exporta o CSV do ERP e o envia na tela Upload<br/><i>POST /importacoes</i>"]
+    a1 --> a2["API decodifica o arquivo e detecta o delimitador"]
+    a2 --> a3["Valida a próxima linha<br/><i>campos obrigatórios, datas, valores</i>"]
+    a3 --> d1{"Linha válida?"}
+    d1 -- Não --> a4["Registra o erro com o número da linha"]
+    d1 -- Sim --> d2{"Há mais linhas?"}
+    a4 --> d2
+    d2 -- Sim --> a3
+    d2 -- Não --> a5["Calcula custo gerencial, giro, classificação<br/>do lote e desconto máximo"]
+    a5 --> a6["Grava produtos, snapshots e resultados no banco"]
+    a6 --> d3{"Gravou sem falha?"}
+    d3 -- Não --> a7["Tela exibe a mensagem de erro"]
+    d3 -- Sim --> a8["Finaliza a importação, salva o id e exibe<br/>o resumo com os erros por linha"]
+    a7 --> fim((( )))
+    a8 --> fim
 
     classDef marco fill:#1E3A5F,stroke:#1E3A5F
     classDef decisao fill:#FFF4D6,stroke:#B8860B,color:#3A2A00
@@ -296,14 +278,14 @@ flowchart TD
     classDef erro fill:#FDECEC,stroke:#B42318,color:#5A0E0A
     class inicio,fim marco
     class d1,d2,d3 decisao
-    class a1,a2,a3,a4,a5,a7,a8,a9,a10,a11,a13,a14 acao
-    class a6,a12 erro
+    class a1,a2,a3,a5,a6,a8 acao
+    class a4,a7 erro
 ```
 
 ### Fluxo 2: Analisar o estoque na Visão geral (UC06, UC07)
 
 ```mermaid
-%%{init: {"flowchart": {"wrappingWidth": 400}}}%%
+%%{init: {"themeVariables": {"fontSize": "13px"}, "flowchart": {"wrappingWidth": 400, "rankSpacing": 28, "nodeSpacing": 30, "padding": 8}}}%%
 flowchart TD
     inicio(( )) --> b1["Gestor abre a tela Visão geral"]
     b1 --> d1{"Há importação salva<br/>neste navegador?"}
@@ -311,17 +293,15 @@ flowchart TD
     d1 -- Sim --> b3["Frontend busca<br/>GET /importacoes/{id}/resultados"]
     b3 --> d2{"A API respondeu?"}
     d2 -- Não --> b4["Exibe a mensagem de erro"]
-    d2 -- Sim --> b5["Calcula os indicadores no navegador"]
-    b5 --> b6["Exibe o resumo em texto e os 8 indicadores"]
-    b6 --> b7["Exibe produtos por classificação, mapa de<br/>prioridade e top 10 categorias"]
-    b7 --> b8["Gestor analisa o quadrante Parado e caro<br/>e as listas de maior custo e mais tempo parado"]
-    b8 --> d3{"Dúvida sobre<br/>um indicador?"}
-    d3 -- Sim --> b9["Consulta o tooltip do indicador<br/>ou a tela Ajuda"]
-    d3 -- Não --> b10["Define quais produtos merecem atenção"]
-    b9 --> b10
+    d2 -- Sim --> b5["Calcula os indicadores no navegador e exibe resumo,<br/>8 indicadores, gráficos e mapa de prioridade"]
+    b5 --> b6["Gestor analisa o quadrante Parado e caro<br/>e as listas de maior custo e mais tempo parado"]
+    b6 --> d3{"Dúvida sobre<br/>um indicador?"}
+    d3 -- Sim --> b7["Consulta o tooltip ou a tela Ajuda"]
+    d3 -- Não --> b8["Define quais produtos merecem atenção"]
+    b7 --> b8
     b2 --> fim((( )))
     b4 --> fim
-    b10 --> fim
+    b8 --> fim
 
     classDef marco fill:#1E3A5F,stroke:#1E3A5F
     classDef decisao fill:#FFF4D6,stroke:#B8860B,color:#3A2A00
@@ -329,34 +309,31 @@ flowchart TD
     classDef erro fill:#FDECEC,stroke:#B42318,color:#5A0E0A
     class inicio,fim marco
     class d1,d2,d3 decisao
-    class b1,b3,b5,b6,b7,b8,b9,b10 acao
+    class b1,b3,b5,b6,b7,b8 acao
     class b2,b4 erro
 ```
 
 ### Fluxo 3: Planejar a promoção na tela Produtos (UC03, UC04, UC05)
 
 ```mermaid
-%%{init: {"flowchart": {"wrappingWidth": 400}}}%%
+%%{init: {"themeVariables": {"fontSize": "13px"}, "flowchart": {"wrappingWidth": 400, "rankSpacing": 28, "nodeSpacing": 30, "padding": 8}}}%%
 flowchart TD
     inicio(( )) --> c1["Gestor abre a tela Produtos"]
     c1 --> d1{"Há importação salva<br/>neste navegador?"}
     d1 -- Não --> c2["Exibe Nenhuma importação encontrada<br/>com link para a tela Upload"]
-    d1 -- Sim --> c3["Exibe a tabela de produtos"]
-    c3 --> c4["Filtra por classificação<br/><i>ex.: Prioridade Alta</i>"]
-    c4 --> c5["Busca por nome ou código e<br/>ordena por custo, giro ou desconto"]
-    c5 --> c6["Consulta o desconto máximo<br/>sugerido em % e em R$"]
-    c6 --> d2{"O produto tem<br/>preço de venda?"}
-    d2 -- Não --> c7["Coluna exibe um traço<br/><i>desconto não calculável</i>"]
+    d1 -- Sim --> c3["Filtra por classificação, busca e ordena a tabela<br/><i>ex.: Prioridade Alta, maior desconto</i>"]
+    c3 --> d2{"O produto tem<br/>preço de venda?"}
+    d2 -- Não --> c4["Coluna de desconto exibe um traço"]
     d2 -- Sim --> d3{"Há espaço para<br/>desconto?"}
-    d3 -- Não --> c8["Exibe o selo Prejuízo, Sem margem<br/>ou No limite: rever preço ou custo"]
-    d3 -- Sim --> c9["Define o desconto da promoção<br/>dentro do máximo sugerido"]
-    c7 --> d4{"Exportar a lista?"}
-    c8 --> d4
-    c9 --> d4
-    d4 -- Sim --> c10["Clica em Exportar Excel e baixa<br/>o CSV com a lista filtrada"]
+    d3 -- Não --> c5["Exibe o selo Prejuízo, Sem margem<br/>ou No limite: rever preço ou custo"]
+    d3 -- Sim --> c6["Define o desconto da promoção<br/>dentro do máximo sugerido"]
+    c4 --> d4{"Exportar a lista?"}
+    c5 --> d4
+    c6 --> d4
+    d4 -- Sim --> c7["Clica em Exportar Excel e baixa<br/>o CSV com a lista filtrada"]
     d4 -- Não --> fim((( )))
     c2 --> fim
-    c10 --> fim
+    c7 --> fim
 
     classDef marco fill:#1E3A5F,stroke:#1E3A5F
     classDef decisao fill:#FFF4D6,stroke:#B8860B,color:#3A2A00
@@ -364,8 +341,8 @@ flowchart TD
     classDef erro fill:#FDECEC,stroke:#B42318,color:#5A0E0A
     class inicio,fim marco
     class d1,d2,d3,d4 decisao
-    class c1,c3,c4,c5,c6,c9,c10 acao
-    class c2,c7,c8 erro
+    class c1,c3,c6,c7 acao
+    class c2,c4,c5 erro
 ```
 
 ---
