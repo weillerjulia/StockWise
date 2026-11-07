@@ -13,9 +13,6 @@
 [![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=weillerjulia_StockWise&metric=alert_status)](https://sonarcloud.io/project/overview?id=weillerjulia_StockWise)
 [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=weillerjulia_StockWise&metric=coverage)](https://sonarcloud.io/project/overview?id=weillerjulia_StockWise)
 
-**Julia Weiller** · Universidade Católica de Santa Catarina, Jaraguá do Sul, SC<br/>
-Trabalho de Conclusão de Curso · Linha de Projeto Web Apps · PAC 7/8 · 2026
-
 </div>
 
 ---
@@ -39,9 +36,8 @@ Trabalho de Conclusão de Curso · Linha de Projeto Web Apps · PAC 7/8 · 2026
 15. [Aderência à linha Web](#15-aderência-à-linha-web)
 16. [Trabalhos futuros](#16-trabalhos-futuros)
 17. [Como rodar o projeto](#17-como-rodar-o-projeto)
-18. [Contribuições externas](#18-contribuições-externas)
-19. [Referências](#19-referências)
-20. [Autora](#20-autora)
+18. [Referências](#18-referências)
+19. [Autora](#19-autora)
 
 ---
 
@@ -601,14 +597,14 @@ Análise contínua no [SonarQube Cloud](https://sonarcloud.io/project/overview?i
 bugs, vulnerabilidades, code smells, duplicação e cobertura.
 
 <p align="center">
-  <img src="docs/prints/sonarcloud.png" alt="Painel do SonarQube Cloud: Quality Gate aprovado, 0,0% de duplicação e 67,3% de cobertura" width="820"/>
+  <img src="docs/prints/sonarcloud.png" alt="Painel do SonarQube Cloud: Quality Gate aprovado, 3 issues, 0,0% de duplicação e 67,2% de cobertura" width="820"/>
 </p>
 
 | Critério | Nota | Questões em aberto |
 |---|:---:|---|
 | Segurança | B | 3, de severidade alta |
-| Confiabilidade | C | 6, de severidade média |
-| Manutenibilidade | A | 5 |
+| Confiabilidade | A | 0 |
+| Manutenibilidade | A | 0 |
 | Revisão de security hotspots | A | 0 |
 
 Análise do código completo (*Overall code*) em 07/11/2026.
@@ -642,11 +638,6 @@ produtos ([validacao-valores-stockwise.xlsx](docs/validacao-valores-stockwise.xl
 | Valores exibidos na tela Produtos | 336 | 0 |
 | Indicadores, gráficos e listas do Dashboard | 46 | 0 |
 | **Total** | **1.838** | **0** |
-
-A mesma planilha registra pontos de interpretação que não são erros de cálculo,
-como os indicadores em R$ somarem valores por unidade e a "margem mínima de 10%"
-ser um acréscimo sobre o custo. Eles estão em
-[Limitações](#2-escopo-e-limitações) e em [Trabalhos futuros](#16-trabalhos-futuros).
 
 ### Validação da classificação com K-Means
 
@@ -783,14 +774,7 @@ importação mais recente.
 
 ---
 
-## 18. Contribuições externas
-
-> **[A inserir]** Contribuições de terceiros (orientação, empresa parceira,
-> colegas), se houver. O código do repositório foi desenvolvido pela autora.
-
----
-
-## 19. Referências
+## 18. Referências
 
 **Documentação do projeto**
 
@@ -811,7 +795,7 @@ importação mais recente.
 
 ---
 
-## 20. Autora
+## 19. Autora
 
 **Julia Weiller**<br/>
 Universidade Católica de Santa Catarina, Jaraguá do Sul, SC<br/>

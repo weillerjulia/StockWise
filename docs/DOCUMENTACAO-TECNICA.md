@@ -156,7 +156,7 @@ StockWise/
 │       │   └── storage.ts         # leitura/escrita do id da última importação no localStorage
 │       ├── hooks/
 │       │   └── useResultadosUltimaImportacao.ts  # hook que busca os resultados da última importação
-│       ├── pages/                 # uma tela por rota (e os testes *.test.tsx de Upload e Produtos)
+│       ├── pages/                 # uma tela por rota (e os testes *.test.tsx de Upload, Produtos e Ajuda)
 │       │   ├── UploadPage.tsx     # rota "/" — upload do CSV
 │       │   ├── DashboardPage.tsx  # rota "/dashboard" — indicadores agregados
 │       │   ├── ProdutosPage.tsx   # rota "/produtos" — tabela de produtos
@@ -167,9 +167,11 @@ StockWise/
 │       │   ├── ClassificacaoBadge.tsx  # pílula colorida por classificação
 │       │   ├── MapaPrioridadeChart.tsx # dispersão giro × custo gerencial do Dashboard
 │       │   ├── HelpTooltip.tsx    # tooltip de ajuda inline (colunas da tabela e cards do Dashboard)
+│       │   ├── SeloSemDesconto.tsx # selo Prejuízo / Sem margem / No limite na tabela de produtos
 │       │   └── Pagination.tsx     # paginação client-side da tabela de produtos
 │       └── utils/
 │           ├── format.ts          # formatação de moeda/número/data em pt-BR
+│           ├── situacaoDesconto.ts # classifica por que o desconto máximo é zero
 │           └── exportCsv.ts       # exportação da tabela de produtos para CSV
 │
 └── docs/
@@ -511,7 +513,7 @@ conteúdo):
 |---|---|---|
 | `/` | [`UploadPage.tsx`](../frontend/src/pages/UploadPage.tsx) | Formulário de upload do CSV (drag-and-drop ou clique), mostra o formato esperado, o resumo pós-upload (linhas totais/importadas/com erro + tabela de erros por linha) e um resumo da última importação salva |
 | `/dashboard` | [`DashboardPage.tsx`](../frontend/src/pages/DashboardPage.tsx) | KPIs agregados (valor imobilizado total/crítico, potencial de recuperação, risco de ruptura, giro médio), gráfico de barras por classificação, mapa de prioridade (dispersão giro × custo), gráfico de valor imobilizado por categoria, top 5 por custo e top 5 parados há mais tempo. Os indicadores em R$ somam valores por unidade, sem multiplicar pela quantidade em estoque (RFC seção 6) |
-| `/produtos` | [`ProdutosPage.tsx`](../frontend/src/pages/ProdutosPage.tsx) | Tabela paginada de produtos com busca por nome/código, filtro por classificação, ordenação por coluna (custo, giro, desconto) e exportação para CSV |
+| `/produtos` | [`ProdutosPage.tsx`](../frontend/src/pages/ProdutosPage.tsx) | Tabela paginada de produtos com busca por nome/código, filtro por classificação, ordenação por coluna (custo, giro, desconto), selo nos produtos sem espaço para desconto, indicador com o total desses produtos e exportação para CSV |
 | `/ajuda` | [`AjudaPage.tsx`](../frontend/src/pages/AjudaPage.tsx) | Explicação didática (com fórmulas e exemplos numéricos) de cada indicador calculado pelo backend e resumo da validação da classificação com K-Means |
 
 Componentes reutilizáveis (`frontend/src/components/`):
@@ -524,7 +526,13 @@ Componentes reutilizáveis (`frontend/src/components/`):
   a classificação de prioridade.
 - **`HelpTooltip`** — ícone de ajuda com texto explicativo, usado nos
   cabeçalhos de coluna da tabela de Produtos e nos cards de indicadores do
-  Dashboard.
+  Dashboard. É um `<button>`, para receber foco pelo teclado.
+- **`SeloSemDesconto`** — selo cinza (*Prejuízo*, *Sem margem* ou *No
+  limite*) mostrado no lugar do desconto zero, com tooltip explicando o
+  motivo. A situação é calculada em
+  [`utils/situacaoDesconto.ts`](../frontend/src/utils/situacaoDesconto.ts),
+  em centavos, com a mesma margem mínima do backend. O tooltip usa posição
+  fixa para não ser cortado pela rolagem da tabela.
 - **`Pagination`** — controle de paginação client-side, com seletor de
   itens por página (10, 25, 50 ou 100).
 - **`MapaPrioridadeChart`** — gráfico de dispersão (giro 90d × custo
@@ -693,15 +701,15 @@ mínimo = R$ 22,69 × 1,10 = R$ 24,96 → desconto máximo = R$ 34,90 − R$ 24,
 
 ## 7. Testes e Qualidade
 
-Resultados da execução de 02/11/2026, já com a validação de valores monetários. Os números mudam conforme
-o código evolui.
+Resultados da execução de 07/11/2026, já com as correções de confiabilidade
+apontadas pelo SonarCloud. Os números mudam conforme o código evolui.
 
 ### 7.1 Resumo
 
 | Parte | Ferramenta | Testes | Linhas | Meta | Situação |
 |---|---|---|---|---|---|
 | Backend | pytest + pytest-cov | 35 aprovados, 0 falhas | 90% | ≥ 75% | Atingida |
-| Frontend | Vitest + coverage-v8 | 6 aprovados, 0 falhas | 46,92% | ≥ 25% | Atingida |
+| Frontend | Vitest + coverage-v8 | 13 aprovados, 0 falhas | 54,91% | ≥ 25% | Atingida |
 
 O build do frontend (`npm run build`) também concluiu sem erros.
 
@@ -732,34 +740,46 @@ testes não usam o banco.
 
 | Arquivo de teste | Testes | O que verifica |
 |---|---|---|
+| `ProdutosPage.test.tsx` | 8 | Listagem, filtro por classificação, os três selos de desconto zero, indicador de produtos sem desconto (com e sem esses produtos) e dados enviados para a exportação |
 | `UploadPage.test.tsx` | 3 | Envio do CSV, estado sem importação e resumo da última importação |
-| `ProdutosPage.test.tsx` | 2 | Listagem e filtro por classificação |
+| `AjudaPage.test.tsx` | 1 | Explicação dos selos de desconto zero |
 | `App.test.tsx` | 1 | Renderização do layout |
 
 | Arquivo | Cobertura de linhas |
 |---|---|
-| `UploadPage.tsx` | 81,39% |
-| `ProdutosPage.tsx` | 61,4% |
-| `AjudaPage.tsx` | 25% |
+| `AjudaPage.tsx`, `situacaoDesconto.ts`, `HelpTooltip.tsx`, `KpiCard.tsx` e layout | 100% |
+| `UploadPage.tsx` | 80,48% |
+| `ProdutosPage.tsx` | 73,52% |
+| `SeloSemDesconto.tsx` | 71,42% |
+| `MapaPrioridadeChart.tsx` | 13,04% |
 | `DashboardPage.tsx` | 4,83% |
 | `exportCsv.ts` | 0% |
 
-Total do frontend: 43,75% das instruções, 38,58% dos desvios, 37,16% das
-funções e 46,92% das linhas.
+O `exportCsv.ts` fica em 0% porque o teste de exportação substitui a função por
+um mock e confere os dados que a tela envia, não a geração do arquivo.
+
+Total do frontend: 52,14% das instruções, 46,15% dos desvios, 45,6% das
+funções e 54,91% das linhas.
 
 ### 7.4 SonarQube Cloud
 
 | Indicador | Resultado | Medido em |
 |---|---|---|
-| Cobertura do projeto | 63,2% | Análise pelo CI (`d66e26c`) |
-| Duplicação | 0,0% | Análise automática (`aa204fd`) |
-| Segurança | 7 questões em aberto, nota C | Análise automática (`aa204fd`) |
-| Confiabilidade | 5 questões em aberto, nota C | Análise automática (`aa204fd`) |
-| Manutenibilidade | 4 questões em aberto, nota A | Análise automática (`aa204fd`) |
+| Cobertura do projeto | 67,2% | Análise pelo CI (`3abae7b`, 07/11/2026) |
+| Duplicação | 0,0% | Análise pelo CI (`3abae7b`) |
+| Segurança | 3 questões em aberto, nota B | Análise pelo CI (`3abae7b`) |
+| Confiabilidade | 0 questões, nota A | Análise pelo CI (`3abae7b`) |
+| Manutenibilidade | 0 questões, nota A | Análise pelo CI (`3abae7b`) |
+| Security hotspots | 0, nota A | Análise pelo CI (`3abae7b`) |
 
-As questões em aberto ainda não foram revisadas. A cobertura do Sonar tem valor
-diferente das tabelas acima porque reúne backend e frontend e também considera
-as condições do código.
+As questões de confiabilidade foram corrigidas no commit `3abae7b`: área de
+upload como `<label>` nativo, tooltips e selos como `<button>` em vez de `<span>`
+com `tabIndex`, chamada assíncrona marcada com `void` e `Number.parseInt`. As 3
+de segurança continuam em aberto, em `api/client.ts` e `api/storage.ts`: o `id`
+da importação, lido do `localStorage`, vai para a URL da API sem validação.
+
+A cobertura do Sonar tem valor diferente das tabelas acima porque reúne backend
+e frontend e também considera as condições do código.
 
 ### 7.5 Integração contínua
 

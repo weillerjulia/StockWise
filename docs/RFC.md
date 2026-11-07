@@ -252,7 +252,9 @@ calculada no upload, então é preciso reimportar o CSV.
 - Frontend: Vitest + Testing Library (`frontend/src/App.test.tsx` e
   `frontend/src/pages/*.test.tsx`), cobrindo a renderização do layout, a
   tela de Upload (envio do CSV com resumo e erros por linha, estado sem
-  importação e resumo da última importação salva) e a tela de Produtos
-  (listagem e filtro por classificação).
+  importação e resumo da última importação salva), a tela de Produtos
+  (listagem, filtro por classificação, selos e indicador de produtos sem
+  desconto e dados enviados para a exportação) e a tela de Ajuda (explicação
+  dos selos de desconto zero).
 - Metas de cobertura: ≥75% backend, ≥25% frontend. Resultados em
   [`DOCUMENTACAO-TECNICA.md`](DOCUMENTACAO-TECNICA.md#7-testes-e-qualidade).
