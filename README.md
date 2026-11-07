@@ -62,7 +62,7 @@ meses: armazenagem e capital que poderia estar rendendo em outro lugar.
 
 Na prática, o gestor não tem resposta para perguntas como:
 
-- *Qual é o custo real de manter este produto parado há 8 meses?*
+- *Qual é o custo real de manter este produto parado?*
 - *Qual o desconto máximo que posso aplicar sem prejuízo?*
 - *Quais produtos devo priorizar numa campanha promocional?*
 
