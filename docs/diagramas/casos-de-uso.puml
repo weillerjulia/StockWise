@@ -1,0 +1,46 @@
+@startuml casos-de-uso
+' Diagrama de casos de uso do StockWise (UML).
+' Gerado em PNG com: java -jar plantuml.jar -tpng docs/diagramas/casos-de-uso.puml
+!pragma layout smetana
+
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam backgroundColor #FFFFFF
+skinparam actorBorderColor #1E3A5F
+skinparam actorBackgroundColor #FFFFFF
+skinparam usecase {
+  BackgroundColor #EAF2FB
+  BorderColor #1E3A5F
+  ArrowColor #1E3A5F
+}
+skinparam rectangle {
+  BorderColor #1E3A5F
+  FontStyle bold
+}
+
+left to right direction
+
+actor "Gestor\n(dono ou gestor de estoque)" as Gestor
+
+rectangle "StockWise" {
+  usecase "UC01 - Importar CSV\nde estoque" as UC01
+  usecase "UC02 - Consultar a\núltima importação" as UC02
+  usecase "UC06 - Visualizar indicadores\nno dashboard" as UC06
+  usecase "UC03 - Consultar produtos\nclassificados por prioridade" as UC03
+  usecase "UC04 - Consultar desconto\nmáximo sugerido" as UC04
+  usecase "UC05 - Exportar a lista\nde produtos" as UC05
+  usecase "UC07 - Consultar a ajuda" as UC07
+}
+
+Gestor -- UC01
+Gestor -- UC02
+Gestor -- UC06
+Gestor -- UC03
+Gestor -- UC07
+
+UC03 <.. UC04 : <<extend>>
+UC03 <.. UC05 : <<extend>>
+
+@enduml
