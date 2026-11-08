@@ -664,12 +664,6 @@ descrita acima: o CSV do gestor complementado com os produtos de teste
 | Indicadores, gráficos e listas do Dashboard (por unidade e em estoque) | 86 | 0 |
 | **Total** | **1.878** | **0** |
 
-A aba do Dashboard foi refeita em 08/11/2026 para a Visão geral redesenhada.
-Ela confere os cartões por unidade e em estoque, o giro típico (mediana), a
-frase de resumo, a distribuição por prioridade, os Top 5, os totais das
-categorias e a divisão de cada barra por prioridade. Os valores da tela vêm
-da página real renderizada em ambiente de teste com os dados gravados no banco.
-
 ### Validação da classificação com K-Means
 
 O notebook [clustering_kmeans.ipynb](backend/analysis/clustering_kmeans.ipynb)
