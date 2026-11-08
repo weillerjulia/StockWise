@@ -144,6 +144,7 @@ StockWise/
 │
 ├── frontend/
 │   ├── .env.example               # modelo das variáveis de ambiente
+│   ├── public/favicon.svg         # ícone da aba (mesmo símbolo do LogoSimbolo)
 │   └── src/
 │       ├── main.tsx               # ponto de entrada (ReactDOM.createRoot)
 │       ├── App.tsx                # define as rotas (react-router-dom)
@@ -156,20 +157,25 @@ StockWise/
 │       │   └── storage.ts         # leitura/escrita do id da última importação no localStorage
 │       ├── hooks/
 │       │   └── useResultadosUltimaImportacao.ts  # hook que busca os resultados da última importação
-│       ├── pages/                 # uma tela por rota (e os testes *.test.tsx de Upload, Produtos e Ajuda)
+│       ├── pages/                 # uma tela por rota (e os testes *.test.tsx de Upload, Dashboard, Produtos e Ajuda)
 │       │   ├── UploadPage.tsx     # rota "/" — upload do CSV
 │       │   ├── DashboardPage.tsx  # rota "/dashboard" — indicadores agregados
 │       │   ├── ProdutosPage.tsx   # rota "/produtos" — tabela de produtos
 │       │   └── AjudaPage.tsx      # rota "/ajuda" — explicação das fórmulas
 │       ├── components/
-│       │   ├── layout/            # AppLayout, Sidebar, Topbar (casca da aplicação)
-│       │   ├── KpiCard.tsx        # card de indicador numérico
-│       │   ├── ClassificacaoBadge.tsx  # pílula colorida por classificação
+│       │   ├── layout/            # AppLayout, Sidebar, Topbar e ExtrasDoTitulo (casca da aplicação)
+│       │   ├── KpiCard.tsx        # card de indicador numérico com linha de contexto
+│       │   ├── CardSecao.tsx      # bloco padrão do Dashboard (título, subtítulo e ajuda)
+│       │   ├── ClassificacaoBadge.tsx  # pílula por classificação, com marcador ▲ ◆ ●
+│       │   ├── MarcadorClassificacao.tsx # marcador ▲ ◆ ● na cor da prioridade
 │       │   ├── MapaPrioridadeChart.tsx # dispersão giro × custo gerencial do Dashboard
 │       │   ├── HelpTooltip.tsx    # tooltip de ajuda inline (colunas da tabela e cards do Dashboard)
 │       │   ├── SeloSemDesconto.tsx # selo Prejuízo / Sem margem / No limite na tabela de produtos
-│       │   └── Pagination.tsx     # paginação client-side da tabela de produtos
+│       │   ├── LogoSimbolo.tsx    # símbolo da marca na Sidebar
+│       │   ├── Pagination.tsx     # paginação numerada client-side da tabela de produtos
+│       │   └── Pagination.test.tsx # testes do cálculo das páginas visíveis
 │       └── utils/
+│           ├── classificacao.ts   # ordem, cores, formatos e slugs de URL das classificações
 │           ├── format.ts          # formatação de moeda/número/data em pt-BR
 │           ├── situacaoDesconto.ts # classifica por que o desconto máximo é zero
 │           └── exportCsv.ts       # exportação da tabela de produtos para CSV
@@ -511,19 +517,34 @@ conteúdo):
 
 | Rota | Página | O que faz |
 |---|---|---|
-| `/` | [`UploadPage.tsx`](../frontend/src/pages/UploadPage.tsx) | Formulário de upload do CSV (drag-and-drop ou clique), mostra o formato esperado, o resumo pós-upload (linhas totais/importadas/com erro + tabela de erros por linha) e um resumo da última importação salva |
-| `/dashboard` | [`DashboardPage.tsx`](../frontend/src/pages/DashboardPage.tsx) | KPIs agregados (valor imobilizado total/crítico, potencial de recuperação, risco de ruptura, giro médio), gráfico de barras por classificação, mapa de prioridade (dispersão giro × custo), gráfico de valor imobilizado por categoria, top 5 por custo e top 5 parados há mais tempo. Os indicadores em R$ somam valores por unidade, sem multiplicar pela quantidade em estoque (RFC seção 6) |
-| `/produtos` | [`ProdutosPage.tsx`](../frontend/src/pages/ProdutosPage.tsx) | Tabela paginada de produtos com busca por nome/código, filtro por classificação, ordenação por coluna (custo, giro, desconto), selo nos produtos sem espaço para desconto, indicador com o total desses produtos e exportação para CSV |
+| `/` | [`UploadPage.tsx`](../frontend/src/pages/UploadPage.tsx) | Formulário de upload do CSV (drag-and-drop ou clique) num único card: o arquivo escolhido aparece com nome e tamanho e pode ser trocado ou removido antes de importar; o formato esperado fica numa linha, com as colunas aceitas numa seção recolhível. Mostra a confirmação com link para a Visão geral, o resumo pós-upload (linhas totais/importadas/com erro + tabela de erros por linha) e um resumo da última importação salva |
+| `/dashboard` | [`DashboardPage.tsx`](../frontend/src/pages/DashboardPage.tsx) | Resumo em frase com atalho "Ver produtos prioritários", alerta de risco de ruptura (só quando há produto abaixo do mínimo), 4 KPIs por unidade (valor imobilizado total e crítico, potencial de recuperação e giro típico pela mediana do giro 90d), 3 KPIs em estoque (os valores em R$ multiplicados pela quantidade em estoque), distribuição por prioridade com links para Produtos filtrado, mapa de prioridade (dispersão giro × custo), top 10 categorias por valor imobilizado com barras divididas por prioridade, top 5 por custo e top 5 parados há mais tempo (cada item abre Produtos com a busca preenchida) |
+| `/produtos` | [`ProdutosPage.tsx`](../frontend/src/pages/ProdutosPage.tsx) | Tabela paginada de produtos (código abaixo do nome; desconto sugerido em R$ com o % embaixo) com busca por nome/código, filtro por classificação, ordenação por qualquer coluna, filtro inicial lido do endereço (`?classificacao=` com `alta`, `media` ou `baixa`, e `?busca=`), selo nos produtos sem espaço para desconto, selos ao lado do título com o total de produtos e o total sem desconto, e exportação para CSV |
 | `/ajuda` | [`AjudaPage.tsx`](../frontend/src/pages/AjudaPage.tsx) | Explicação didática (com fórmulas e exemplos numéricos) de cada indicador calculado pelo backend e resumo da validação da classificação com K-Means |
 
 Componentes reutilizáveis (`frontend/src/components/`):
 - **`AppLayout` / `Sidebar` / `Topbar`** — casca visual comum a todas as
-  telas (navegação, título da página).
-- **`KpiCard`** — card genérico de indicador numérico (label + valor +
-  cor/alerta opcional + ícone de ajuda opcional via prop `ajuda`), usado no
-  Dashboard e na Upload.
-- **`ClassificacaoBadge`** — pílula colorida (vermelho/laranja/verde) para
-  a classificação de prioridade.
+  telas (navegação com o `LogoSimbolo`, título da página). O contexto
+  `ExtrasDoTitulo` (`useDefinirExtrasDoTitulo`) deixa uma página colocar
+  elementos ao lado do título da `Topbar`; a tela Produtos usa isso para os
+  selos de total e de produtos sem desconto.
+- **`KpiCard`** — card genérico de indicador numérico: label, valor, linha
+  de contexto opcional (`contexto`, ex.: "23% do total") e ícone de ajuda
+  opcional (`ajuda`). `corBorda` pinta a borda esquerda e `alerta` mostra um
+  ponto vermelho ao lado do rótulo; no Dashboard, os dois cartões de valor
+  imobilizado crítico usam borda vermelha e o ponto (quando há produtos em
+  Prioridade Alta). Na Upload, `tamanhoValor`, `corBorda` e `corValor`
+  destacam o resumo da importação.
+- **`CardSecao`** — bloco padrão das seções do Dashboard: título, subtítulo
+  dizendo para que a seção serve e ajuda opcional.
+- **`ClassificacaoBadge`** — pílula para a classificação de prioridade, com
+  fundo claro na cor da prioridade e o `MarcadorClassificacao` ao lado do
+  texto.
+- **`MarcadorClassificacao`** — marcador SVG (▲ Alta, ◆ Média, ● Baixa) na
+  cor da prioridade, usado na pílula, nas legendas, na distribuição por
+  prioridade e no mapa. Cores, formatos, ordem e os slugs de URL (`alta`,
+  `media`, `baixa`) ficam centralizados em
+  [`utils/classificacao.ts`](../frontend/src/utils/classificacao.ts).
 - **`HelpTooltip`** — ícone de ajuda com texto explicativo, usado nos
   cabeçalhos de coluna da tabela de Produtos e nos cards de indicadores do
   Dashboard. É um `<button>`, para receber foco pelo teclado.
@@ -533,8 +554,10 @@ Componentes reutilizáveis (`frontend/src/components/`):
   [`utils/situacaoDesconto.ts`](../frontend/src/utils/situacaoDesconto.ts),
   em centavos, com a mesma margem mínima do backend. O tooltip usa posição
   fixa para não ser cortado pela rolagem da tabela.
-- **`Pagination`** — controle de paginação client-side, com seletor de
-  itens por página (10, 25, 50 ou 100).
+- **`Pagination`** — controle de paginação client-side numerado (primeira,
+  última e vizinhas da atual, com "…" nas lacunas, calculadas por
+  `calcularPaginasVisiveis`), resumo "Mostrando X a Y de Z" (com "filtrado de
+  N" quando há filtro) e seletor de itens por página (10, 25, 50 ou 100).
 - **`MapaPrioridadeChart`** — gráfico de dispersão (giro 90d × custo
   gerencial) do Dashboard, um ponto por produto. A classificação é
   codificada por cor **e** formato do marcador (triângulo/losango/círculo),
@@ -580,7 +603,9 @@ Dashboard e Produtos.
 
 Filtro, ordenação e paginação da tabela de Produtos são feitos inteiramente
 **no navegador** — a API sempre devolve o lote completo da importação (RFC
-5.8), aceitável para o volume de dados de um PoC.
+5.8), aceitável para o volume de dados de um PoC. Os parâmetros
+`?classificacao=` e `?busca=` do endereço de `/produtos` só definem o filtro
+inicial da tela (são usados pelos links do Dashboard) e não chegam à API.
 
 ---
 
@@ -661,10 +686,12 @@ Corresponde aos UC03 e UC06.
    chamadas.
 5. **Frontend** — em `ProdutosPage`, os dados são mapeados para
    `LinhaProduto[]` e depois filtrados (busca por nome/código, filtro por
-   classificação) e ordenados (por custo, giro ou desconto), tudo com
-   `useMemo` no navegador. Em `DashboardPage`, os mesmos dados alimentam os
-   agregados (contagem por classificação, valor imobilizado total, crítico
-   e por categoria, top 5 etc.) e os gráficos `recharts`.
+   classificação, com valor inicial vindo do endereço) e ordenados por
+   qualquer coluna, tudo com `useMemo` no navegador. Em `DashboardPage`, os
+   mesmos dados alimentam os agregados (contagem e valor por classificação,
+   valor imobilizado total e crítico e potencial de recuperação, por unidade
+   e multiplicados pela quantidade em estoque, mediana do giro 90d, valor por
+   categoria dividido por prioridade, top 5 etc.) e os gráficos `recharts`.
 
 ### 6.3 Fluxo 3 — Cálculo do desconto máximo sugerido (precificação)
 
@@ -701,15 +728,17 @@ mínimo = R$ 22,69 × 1,10 = R$ 24,96 → desconto máximo = R$ 34,90 − R$ 24,
 
 ## 7. Testes e Qualidade
 
-Resultados da execução de 07/11/2026, já com as correções de confiabilidade
-apontadas pelo SonarCloud. Os números mudam conforme o código evolui.
+Backend: execução de 07/11/2026, já com as correções de confiabilidade
+apontadas pelo SonarCloud. Frontend: execução de 08/11/2026, após o redesenho
+das telas Visão geral, Produtos e Upload. Os números mudam conforme o código
+evolui.
 
 ### 7.1 Resumo
 
 | Parte | Ferramenta | Testes | Linhas | Meta | Situação |
 |---|---|---|---|---|---|
 | Backend | pytest + pytest-cov | 35 aprovados, 0 falhas | 90% | ≥ 75% | Atingida |
-| Frontend | Vitest + coverage-v8 | 13 aprovados, 0 falhas | 54,91% | ≥ 25% | Atingida |
+| Frontend | Vitest + coverage-v8 | 29 aprovados, 0 falhas | 83,05% | ≥ 25% | Atingida |
 
 O build do frontend (`npm run build`) também concluiu sem erros.
 
@@ -740,28 +769,36 @@ testes não usam o banco.
 
 | Arquivo de teste | Testes | O que verifica |
 |---|---|---|
-| `ProdutosPage.test.tsx` | 8 | Listagem, filtro por classificação, os três selos de desconto zero, indicador de produtos sem desconto (com e sem esses produtos) e dados enviados para a exportação |
-| `UploadPage.test.tsx` | 3 | Envio do CSV, estado sem importação e resumo da última importação |
+| `ProdutosPage.test.tsx` | 12 | Listagem, código abaixo do nome e desconto em R$ com o %, ordenação por nome e por classificação, filtro por classificação (inclusive vindo do endereço), os três selos de desconto zero, indicador de produtos sem desconto (com e sem esses produtos), total geral no título e total filtrado no rodapé, navegação pelos números da paginação e dados enviados para a exportação |
+| `DashboardPage.test.tsx` | 5 | Indicadores por unidade com contexto, giro típico pela mediana, valores multiplicados pela quantidade em estoque, links da distribuição por prioridade para Produtos filtrado e alerta de ruptura (com e sem produtos abaixo do mínimo) |
+| `Pagination.test.tsx` | 5 | Cálculo das páginas visíveis: poucas páginas, reticências no início, no fim e dos dois lados, e número no lugar de reticências quando falta só uma página |
+| `UploadPage.test.tsx` | 4 | Envio do CSV com confirmação e link para a Visão geral, estado sem importação, resumo da última importação e troca/remoção do arquivo antes de importar |
 | `AjudaPage.test.tsx` | 1 | Explicação dos selos de desconto zero |
 | `App.test.tsx` | 1 | Renderização do layout |
 
 | Arquivo | Cobertura de linhas |
 |---|---|
-| `AjudaPage.tsx`, `situacaoDesconto.ts`, `HelpTooltip.tsx`, `KpiCard.tsx` e layout | 100% |
-| `UploadPage.tsx` | 80,48% |
-| `ProdutosPage.tsx` | 73,52% |
-| `SeloSemDesconto.tsx` | 71,42% |
-| `MapaPrioridadeChart.tsx` | 13,04% |
-| `DashboardPage.tsx` | 4,83% |
+| `AjudaPage.tsx`, `situacaoDesconto.ts`, `classificacao.ts`, `format.ts`, `HelpTooltip.tsx`, `KpiCard.tsx`, `CardSecao.tsx`, `ClassificacaoBadge.tsx`, `MarcadorClassificacao.tsx`, `LogoSimbolo.tsx` e layout | 100% |
+| `DashboardPage.tsx` | 90,54% |
+| `ProdutosPage.tsx` | 89,15% |
+| `Pagination.tsx` | 85,71% |
+| `UploadPage.tsx` | 79,59% |
+| `MapaPrioridadeChart.tsx` | 70,58% |
+| `useResultadosUltimaImportacao.ts` | 70% |
+| `SeloSemDesconto.tsx` | 66,66% |
+| `api/client.ts` | 63,15% |
 | `exportCsv.ts` | 0% |
 
 O `exportCsv.ts` fica em 0% porque o teste de exportação substitui a função por
 um mock e confere os dados que a tela envia, não a geração do arquivo.
 
-Total do frontend: 52,14% das instruções, 46,15% dos desvios, 45,6% das
-funções e 54,91% das linhas.
+Total do frontend: 82,19% das instruções, 70,53% dos desvios, 83% das
+funções e 83,05% das linhas.
 
 ### 7.4 SonarQube Cloud
+
+Os números abaixo são da análise de 07/11/2026, anterior ao redesenho do
+frontend; a cobertura do Sonar só é atualizada na próxima execução do CI.
 
 | Indicador | Resultado | Medido em |
 |---|---|---|
@@ -793,7 +830,8 @@ push ou pull request para `main` e `development`:
 ### 7.6 O que estes resultados não cobrem
 
 - Acesso real ao Supabase e fluxo completo entre frontend, backend e banco.
-- Telas e funções sem testes dedicados, como o Dashboard e a exportação de CSV.
+- Funções sem testes dedicados, como a geração do arquivo da exportação de
+  CSV (`exportCsv.ts`).
 - Validação dos cálculos com dados reais ou simulados.
 
 ---

@@ -7,9 +7,12 @@ interface KpiCardProps {
   contexto?: string;
   ajuda?: string;
   alinharAjuda?: "esquerda" | "direita";
+  /** Ponto vermelho ao lado do rótulo, para indicadores que pedem atenção. */
+  alerta?: boolean;
+  /** Classe Tailwind da borda esquerda colorida. Ex: "border-l-red-400". */
+  corBorda?: string;
   /** Usados na tela de Upload (resumo da última importação). */
   tamanhoValor?: "grande" | "pequeno";
-  corBorda?: string;
   corValor?: string;
 }
 
@@ -19,8 +22,9 @@ export default function KpiCard({
   contexto,
   ajuda,
   alinharAjuda,
-  tamanhoValor = "grande",
+  alerta,
   corBorda,
+  tamanhoValor = "grande",
   corValor,
 }: KpiCardProps) {
   const classeValor = tamanhoValor === "pequeno" ? "text-base font-semibold" : "text-2xl font-bold";
@@ -33,6 +37,7 @@ export default function KpiCard({
     >
       <div className="flex items-center gap-1.5">
         <p className="text-xs font-medium tracking-wide text-slate-500 uppercase">{label}</p>
+        {alerta && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-red-500" aria-hidden="true" />}
         {ajuda && <HelpTooltip texto={ajuda} alinhar={alinharAjuda} />}
       </div>
       <p className={`mt-2 tabular-nums ${classeValor} ${corValor ?? "text-slate-800"}`}>{valor}</p>

@@ -233,6 +233,8 @@ export default function DashboardPage() {
         />
         <KpiCard
           label="Valor imobilizado crítico (por unidade)"
+          corBorda="border-l-red-400"
+          alerta={qtdPrioridadeAlta > 0}
           valor={formatarMoeda(valorImobilizadoCritico)}
           contexto={`${percentual(valorImobilizadoCritico, valorTotalImobilizado)} do total, em prioridade alta`}
           ajuda="Soma do custo gerencial de 1 unidade de cada produto em Prioridade Alta. Não considera a quantidade em estoque."
@@ -262,6 +264,8 @@ export default function DashboardPage() {
         />
         <KpiCard
           label="Valor imobilizado crítico (em estoque)"
+          corBorda="border-l-red-400"
+          alerta={qtdPrioridadeAlta > 0}
           valor={formatarMoeda(emEstoque.critico)}
           contexto={`${percentual(emEstoque.critico, emEstoque.valor)} do valor em estoque, em prioridade alta`}
           ajuda="Custo gerencial × quantidade em estoque, somando só os produtos em Prioridade Alta."

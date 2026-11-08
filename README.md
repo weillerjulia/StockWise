@@ -116,8 +116,9 @@ sem prejuízo.
   (o `id` fica no `localStorage`).
 - A gravação da importação não é atômica: uma falha no meio mantém as linhas já
   gravadas.
-- Os indicadores em R$ do Dashboard somam valores **por unidade**, sem
-  multiplicar pela quantidade em estoque.
+- O gráfico de categorias e a distribuição por prioridade do Dashboard usam
+  o valor **por unidade**; só os indicadores "em estoque" multiplicam pela
+  quantidade em estoque.
 - A data de referência dos cálculos é o dia do upload, e não o dia em que o CSV
   foi extraído do ERP.
 - A classificação é relativa ao lote: um produto pode mudar de faixa se os
@@ -177,8 +178,8 @@ A lista completa de funcionalidades está nos [requisitos funcionais](#requisito
 | RF06 | Classificar cada produto em Prioridade Alta, Média ou Baixa, relativa ao lote importado. | UC01, UC03 |
 | RF07 | Calcular o desconto máximo sugerido (em % e R$) que preserva a margem mínima e sinalizar produtos sem espaço para desconto. | UC04 |
 | RF08 | Exibir o resumo da última importação (data, linhas importadas, linhas com erro e status). | UC02 |
-| RF09 | Exibir indicadores agregados, gráficos e mapa de prioridade no Dashboard. | UC06 |
-| RF10 | Listar os produtos com busca, filtro por classificação, ordenação e paginação. | UC03 |
+| RF09 | Exibir indicadores agregados (por unidade e em estoque), gráficos e mapa de prioridade no Dashboard, com atalhos para a tabela de Produtos já filtrada. | UC06 |
+| RF10 | Listar os produtos com busca, filtro por classificação, ordenação por qualquer coluna e paginação. | UC03 |
 | RF11 | Exportar a lista filtrada de produtos para CSV compatível com Excel. | UC05 |
 | RF12 | Explicar cada métrica na interface (tooltips) e na página de Ajuda, com fórmulas e exemplos. | UC07 |
 
@@ -190,7 +191,7 @@ A lista completa de funcionalidades está nos [requisitos funcionais](#requisito
 | RNF02 | **Precisão:** cálculos monetários sem erro de arredondamento binário. | Uso de `Decimal` no backend e de centavos inteiros no frontend. |
 | RNF03 | **Testabilidade:** cobertura mínima de 75% no backend e 25% no frontend. | Regras de negócio em funções puras; o CI falha abaixo da meta. |
 | RNF04 | **Usabilidade:** interface em português, com valores e datas no formato brasileiro. | Formatação pt-BR em toda a interface e no CSV exportado. |
-| RNF05 | **Acessibilidade:** informação não depende só de cor. | Classificação por cor **e** formato no mapa de prioridade; tooltips acessíveis por teclado. |
+| RNF05 | **Acessibilidade:** informação não depende só de cor. | Classificação por cor **e** formato (▲ ◆ ●) no mapa, nas pílulas e nas legendas; tooltips e paginação acessíveis por teclado e leitor de tela. |
 | RNF06 | **Robustez:** linhas inválidas não derrubam a importação. | Validação linha a linha, com erro registrado por linha. |
 | RNF07 | **Compatibilidade:** o CSV exportado abre corretamente no Excel. | Delimitador `;` e codificação UTF-8 com BOM. |
 | RNF08 | **Manutenibilidade:** código modular e analisado continuamente. | Separação em rotas, serviços e repositório; análise do SonarQube Cloud a cada push. |
@@ -258,23 +259,26 @@ flowchart TD
     d1 -- Sim --> b3["Frontend busca<br/>GET /importacoes/{id}/resultados"]
     b3 --> d2{"A API respondeu?"}
     d2 -- Não --> b4["Exibe a mensagem de erro"]
-    d2 -- Sim --> b5["Calcula os indicadores no navegador e exibe resumo,<br/>8 indicadores, gráficos e mapa de prioridade"]
+    d2 -- Sim --> b5["Calcula os indicadores no navegador e exibe resumo,<br/>7 indicadores (por unidade e em estoque), gráficos e mapa de prioridade"]
     b5 --> b6["Gestor analisa o quadrante Parado e caro<br/>e as listas de maior custo e mais tempo parado"]
     b6 --> d3{"Dúvida sobre<br/>um indicador?"}
     d3 -- Sim --> b7["Consulta o tooltip ou a tela Ajuda"]
     d3 -- Não --> b8["Define quais produtos merecem atenção"]
     b7 --> b8
-    b2 --> fim((( )))
+    b8 --> d4{"Quer ver os produtos<br/>na tabela?"}
+    d4 -- Sim --> b9["Clica numa prioridade, em Ver produtos prioritários<br/>ou num item do Top 5 e abre Produtos já filtrado"]
+    d4 -- Não --> fim((( )))
+    b9 --> fim
+    b2 --> fim
     b4 --> fim
-    b8 --> fim
 
     classDef marco fill:#1E3A5F,stroke:#1E3A5F
     classDef decisao fill:#FFF4D6,stroke:#B8860B,color:#3A2A00
     classDef acao fill:#EAF2FB,stroke:#1E3A5F,color:#0B2540
     classDef erro fill:#FDECEC,stroke:#B42318,color:#5A0E0A
     class inicio,fim marco
-    class d1,d2,d3 decisao
-    class b1,b3,b5,b6,b7,b8 acao
+    class d1,d2,d3,d4 decisao
+    class b1,b3,b5,b6,b7,b8,b9 acao
     class b2,b4 erro
 ```
 
@@ -446,9 +450,9 @@ flowchart LR
 | Serviços | [backend/app/services/](backend/app/services/) | Regras de negócio puras, sem acesso a rede ou banco, testáveis isoladamente. |
 | Repositório | [importacoes_repository.py](backend/app/services/importacoes_repository.py) | Único módulo que fala com o Supabase. |
 | Páginas | [frontend/src/pages/](frontend/src/pages/) | Uma tela por rota. |
-| Componentes | [frontend/src/components/](frontend/src/components/) | Reutilizáveis: `KpiCard`, `ClassificacaoBadge`, `HelpTooltip`, `Pagination`, `MapaPrioridadeChart`, `SeloSemDesconto` e o layout (`AppLayout`, `Sidebar`, `Topbar`). |
+| Componentes | [frontend/src/components/](frontend/src/components/) | Reutilizáveis: `KpiCard`, `CardSecao`, `ClassificacaoBadge`, `MarcadorClassificacao`, `HelpTooltip`, `Pagination`, `MapaPrioridadeChart`, `SeloSemDesconto`, `LogoSimbolo` e o layout (`AppLayout`, `Sidebar`, `Topbar`, `ExtrasDoTitulo`). |
 | Acesso à API | [frontend/src/api/](frontend/src/api/) | Funções `fetch`, tipos TypeScript e leitura do `localStorage`. |
-| Hooks e utilitários | [frontend/src/hooks/](frontend/src/hooks/), [frontend/src/utils/](frontend/src/utils/) | Busca dos resultados, formatação pt-BR, exportação do CSV e situação do desconto. |
+| Hooks e utilitários | [frontend/src/hooks/](frontend/src/hooks/), [frontend/src/utils/](frontend/src/utils/) | Busca dos resultados, formatação pt-BR, exportação do CSV, situação do desconto e cores/formatos das classificações. |
 
 ### Modelagem de dados
 
@@ -540,6 +544,13 @@ Exemplos de requisição e resposta:
   decisão de manter o sistema aberto.
 - **Desconto:** produtos sem espaço para desconto passaram a ter selo e aviso
   na tela Produtos.
+- **Indicadores em estoque:** a Visão geral passou a mostrar, além dos valores
+  por unidade, o valor imobilizado, o valor crítico e o potencial de
+  recuperação multiplicados pela quantidade em estoque. O giro médio virou
+  giro típico (mediana), menos sensível a produtos com giro muito alto.
+- **Navegação pelo painel:** a distribuição por prioridade, o botão "Ver
+  produtos prioritários" e as listas Top 5 abrem a tela Produtos já filtrada
+  (`/produtos?classificacao=alta`, `/produtos?busca=…`).
 
 Todas as decisões, com o contexto completo: [docs/RFC.md](docs/RFC.md#5-decisões-técnicas-relevantes).
 
@@ -549,17 +560,19 @@ Todas as decisões, com o contexto completo: [docs/RFC.md](docs/RFC.md#5-decisõ
 
 ### Testes unitários
 
-Execução de 07/11/2026:
+Backend executado em 07/11/2026 e frontend em 08/11/2026:
 
 | Parte | Testes | Cobertura de linhas | Meta |
 |---|---|---|---|
 | Backend (pytest) | 35 aprovados, 0 falhas | **90%** | ≥ 75% |
-| Frontend (Vitest) | 13 aprovados, 0 falhas | **54,91%** | ≥ 25% |
+| Frontend (Vitest) | 29 aprovados, 0 falhas | **83,05%** | ≥ 25% |
 
 - **Backend:** os 4 módulos de cálculo têm 100% de cobertura, o `csv_import`
   tem 95% e as rotas, 89%. Os testes não acessam o Supabase: o repositório é
   substituído por mocks.
-- **Frontend:** testes das telas Upload, Produtos e Ajuda e do layout.
+- **Frontend:** testes das telas Upload, Visão geral, Produtos e Ajuda, da
+  paginação e do layout. Detalhes por arquivo na
+  [Documentação Técnica](docs/DOCUMENTACAO-TECNICA.md#7-testes-e-qualidade).
 
 ```bash
 cd backend && pytest --cov=app         # backend
@@ -573,7 +586,7 @@ cd frontend && npm run test:coverage   # frontend
 
 <p align="center">
   <b>Frontend</b> (Vitest + Istanbul)<br/>
-  <img src="docs/prints/cobertura-frontend.png" alt="Relatório de cobertura do frontend: 54,91% das linhas" width="820"/>
+  <img src="docs/prints/cobertura-frontend.png" alt="Relatório de cobertura do frontend" width="820"/>
 </p>
 
 Detalhes por arquivo: [DOCUMENTACAO-TECNICA.md, seção 7](docs/DOCUMENTACAO-TECNICA.md#7-testes-e-qualidade).
@@ -648,8 +661,14 @@ descrita acima: o CSV do gestor complementado com os produtos de teste
 | Desconto máximo (R$ e %) | 112 | 0 |
 | Classificação (score e faixa) | 112 | 0 |
 | Valores exibidos na tela Produtos | 336 | 0 |
-| Indicadores, gráficos e listas do Dashboard | 46 | 0 |
-| **Total** | **1.838** | **0** |
+| Indicadores, gráficos e listas do Dashboard (por unidade e em estoque) | 86 | 0 |
+| **Total** | **1.878** | **0** |
+
+A aba do Dashboard foi refeita em 08/11/2026 para a Visão geral redesenhada.
+Ela confere os cartões por unidade e em estoque, o giro típico (mediana), a
+frase de resumo, a distribuição por prioridade, os Top 5, os totais das
+categorias e a divisão de cada barra por prioridade. Os valores da tela vêm
+da página real renderizada em ambiente de teste com os dados gravados no banco.
 
 ### Validação da classificação com K-Means
 
@@ -679,7 +698,7 @@ compara produto a produto:
 | Diagrama de arquitetura (C4) | Contexto, Contêineres e Componentes. | [Arquitetura](#9-arquitetura) |
 | Instruções de deploy | Execução local do banco, da API e do frontend. | [Como rodar](#17-como-rodar-o-projeto) |
 | Pelo menos três fluxos de negócio completos | Importar o estoque, analisar na Visão geral e planejar a promoção. | [Fluxos de negócio](#7-fluxos-de-negócio) |
-| Cobertura de testes: 75% backend e 25% frontend | 90% no backend e 54,91% no frontend, verificados no CI. | [Testes](#13-qualidade-testes-e-privacidade) |
+| Cobertura de testes: 75% backend e 25% frontend | 90% no backend e 83,05% no frontend, verificados no CI. | [Testes](#13-qualidade-testes-e-privacidade) |
 
 ---
 
@@ -689,7 +708,6 @@ compara produto a produto:
 - Histórico e comparação entre importações.
 - Informar a data de extração do CSV no upload, para que os dias em estoque não
   dependam do dia da importação.
-- Multiplicar os indicadores em R$ pela quantidade em estoque.
 - Gravação atômica da importação.
 - Hospedagem pública.
 

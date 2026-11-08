@@ -67,7 +67,8 @@ GitHub Actions, com Python 3.14 e Node.js 24, e SonarQube Cloud.
    Produtos. A tela de Upload usa `GET /importacoes/{id}` para mostrar o
    resumo da última importação (data/hora, linhas importadas, com erro e
    status).
-6. Os indicadores do Dashboard (totais, contagens, médias, rankings) e a
+6. Os indicadores do Dashboard (totais por unidade e em estoque, contagens,
+   mediana do giro, rankings) e a
    busca/filtro/ordenação/paginação da tabela de Produtos são calculados no
    navegador a partir desses resultados — não há endpoints de agregação.
 
@@ -149,10 +150,17 @@ mesmo.
 
 A tabela de produtos busca todos os resultados da importação de uma vez e
 aplica no navegador: busca por nome ou código, filtro por classificação,
-ordenação (custo gerencial, giro 90d, desconto máximo em % e em R$) e
-paginação (10, 25, 50 ou 100 itens por página). Não há parâmetros de query
-no backend. Aceitável para o volume de dados de uma importação de PoC;
+ordenação por qualquer coluna (nome, categoria, custo gerencial, preço de
+venda, giro 90d, classificação e desconto máximo em R$ ou em %) e
+paginação numerada (10, 25, 50 ou 100 itens por página). Não há parâmetros de
+query no backend. Aceitável para o volume de dados de uma importação de PoC;
 seria revisado para lotes muito maiores.
+
+O filtro inicial pode vir no endereço da tela (`/produtos?classificacao=alta`,
+`media` ou `baixa`, e `/produtos?busca=<termo>`). É assim que os links do
+Dashboard (distribuição por prioridade, botão "Ver produtos prioritários" e
+listas Top 5) abrem a tabela já filtrada. Esses parâmetros são lidos só pelo
+frontend; a chamada à API continua a mesma.
 
 ### 5.9 Clustering K-Means como notebook standalone
 
@@ -238,10 +246,11 @@ calculada no upload, então é preciso reimportar o CSV.
 - Paginação só no navegador — assume que uma importação cabe inteira na
   memória do navegador.
 - Os indicadores em R$ do Dashboard (valor total imobilizado, valor
-  imobilizado crítico e potencial de recuperação) somam valores **por
-  unidade** (custo gerencial e desconto máximo unitários), sem multiplicar
-  pela quantidade em estoque. Os tooltips descrevem o cálculo como está; a
-  correção fica para uma próxima etapa.
+  imobilizado crítico e potencial de recuperação) aparecem em duas versões:
+  **por unidade** (soma do custo gerencial e do desconto máximo de 1 unidade
+  de cada produto) e **em estoque** (os mesmos valores multiplicados pela
+  quantidade em estoque de cada produto). O gráfico de categorias e a
+  distribuição por prioridade continuam usando o valor por unidade.
 
 ## 7. Testes
 
@@ -249,12 +258,16 @@ calculada no upload, então é preciso reimportar o CSV.
   (encoding, delimitador, formato decimal, valores ambíguos, campos obrigatórios), cálculo de
   custo gerencial, giro, classificação e desconto máximo, e os endpoints de
   importação, com o acesso ao Supabase substituído por mocks.
-- Frontend: Vitest + Testing Library (`frontend/src/App.test.tsx` e
-  `frontend/src/pages/*.test.tsx`), cobrindo a renderização do layout, a
-  tela de Upload (envio do CSV com resumo e erros por linha, estado sem
-  importação e resumo da última importação salva), a tela de Produtos
-  (listagem, filtro por classificação, selos e indicador de produtos sem
-  desconto e dados enviados para a exportação) e a tela de Ajuda (explicação
-  dos selos de desconto zero).
+- Frontend: Vitest + Testing Library (`frontend/src/App.test.tsx`,
+  `frontend/src/pages/*.test.tsx` e `frontend/src/components/*.test.tsx`),
+  cobrindo a renderização do layout, a tela de Upload (envio do CSV com
+  resumo e erros por linha, estado sem importação, resumo da última
+  importação salva e troca/remoção do arquivo antes de importar), a tela de
+  Produtos (listagem, ordenação, filtro por classificação, inclusive vindo do
+  endereço, selos e indicador de produtos sem desconto, totais e paginação, e
+  dados enviados para a exportação), a Visão geral (indicadores por unidade
+  e em estoque, giro pela mediana, links para Produtos filtrado e alerta de
+  ruptura), o cálculo das páginas visíveis da paginação e a tela de Ajuda
+  (explicação dos selos de desconto zero).
 - Metas de cobertura: ≥75% backend, ≥25% frontend. Resultados em
   [`DOCUMENTACAO-TECNICA.md`](DOCUMENTACAO-TECNICA.md#7-testes-e-qualidade).
