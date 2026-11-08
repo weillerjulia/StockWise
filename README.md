@@ -525,7 +525,7 @@ Exemplos de requisição e resposta:
 | Regras de negócio em funções puras | Cálculos testáveis sem banco, o que sustenta a cobertura de 90%. | O repositório fica com cobertura menor, porque os testes não acessam o Supabase. |
 | Recusar valores monetários ambíguos | `1.234` pode ser mil ou pouco mais de um real; adivinhar distorcia custo e desconto sem aviso. | O gestor precisa corrigir essas linhas no CSV. |
 | Decodificação em cadeia (UTF-8 → CP1252 → Mac Roman) | Um CSV real veio do Excel de Mac e falhava. | Um arquivo em outra codificação pode entrar com acentos incorretos. |
-| Margem mínima de 10% no desconto | Evitar que a promoção mais agressiva zere a margem. | O desconto sugerido é mais conservador. |
+| Margem mínima de 10% no desconto | Evitar que a promoção mais agressiva zere a margem. O valor foi definido com o gestor da empresa (ver [seção 14](#validação-com-a-empresa)). | O desconto sugerido é mais conservador, e a margem é fixa: mudar o valor exige alterar o código. |
 | `localStorage` em vez de listar importações | Suficiente para um sistema aberto de uso local. | Cada navegador vê só a última importação feita nele. |
 | Busca, filtro e paginação no navegador | API mais simples, sem parâmetros de consulta. | Supõe que a importação caiba na memória do navegador. |
 | K-Means em notebook separado | O objetivo era validar a classificação, não expor clusters ao usuário. | A validação não roda automaticamente a cada importação. |
@@ -622,11 +622,23 @@ Análise do código completo (*Overall code*) em 07/11/2026.
 
 ## 14. Resultados e validação
 
+### Validação com a empresa
+
+Os cálculos foram alinhados e validados com o gestor de uma empresa de
+autopeças, que também forneceu o CSV exportado do ERP de estoque. Esse arquivo
+foi a base usada no desenvolvimento e nos testes do sistema, complementada com
+alguns produtos criados pela autora para cobrir situações que não apareciam nos
+dados originais.
+
+A margem mínima de 10% usada no desconto máximo foi definida em conjunto com
+o gestor e, por isso, está fixa no sistema atualmente.
+
 ### Conferência dos valores calculados
 
 Os valores exibidos no sistema foram conferidos um a um contra uma planilha que
-recalcula cada fórmula de forma independente, usando uma base de exemplo com 56
-produtos ([validacao-valores-stockwise.xlsx](docs/validacao-valores-stockwise.xlsx)).
+recalcula cada fórmula de forma independente, usando a base de 56 produtos
+descrita acima: o CSV do gestor complementado com os produtos de teste
+([validacao-valores-stockwise.xlsx](docs/validacao-valores-stockwise.xlsx)).
 
 | Verificação | Comparações | Divergências |
 |---|---|---|
