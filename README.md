@@ -586,7 +586,7 @@ cd frontend && npm run test:coverage   # frontend
 
 <p align="center">
   <b>Frontend</b> (Vitest + Istanbul)<br/>
-  <img src="docs/prints/cobertura-frontend.png" alt="Relatório de cobertura do frontend" width="820"/>
+  <img src="docs/prints/cobertura-frontend.png" alt="Relatório de cobertura do frontend: 83,05% das linhas" width="820"/>
 </p>
 
 Detalhes por arquivo: [DOCUMENTACAO-TECNICA.md, seção 7](docs/DOCUMENTACAO-TECNICA.md#7-testes-e-qualidade).
