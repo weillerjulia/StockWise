@@ -1,6 +1,8 @@
-import { UploadCloud } from "lucide-react";
+import { ArrowRight, CheckCircle2, ChevronRight, FileText, UploadCloud, X } from "lucide-react";
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 
+import HelpTooltip from "../components/HelpTooltip";
 import KpiCard from "../components/KpiCard";
 import { getImportacao, uploadCsv } from "../api/client";
 import { obterUltimaImportacaoId, salvarUltimaImportacaoId } from "../api/storage";
@@ -63,6 +65,12 @@ const COR_TEXTO_STATUS: Record<Importacao["status"], string> = {
   falhou: "text-red-700",
 };
 
+function formatarTamanho(bytes: number): string {
+  if (bytes < 1024) return `${bytes} bytes`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1).replace(".", ",")} MB`;
+}
+
 export default function UploadPage() {
   const [arquivo, setArquivo] = useState<File | null>(null);
   const [estado, setEstado] = useState<Estado>({ status: "ocioso" });
@@ -91,6 +99,12 @@ export default function UploadPage() {
     void carregarUltimaImportacao();
   }, []);
 
+  function escolherArquivo(novoArquivo: File | null) {
+    setArquivo(novoArquivo);
+    // Um arquivo novo apaga a mensagem da importação anterior.
+    if (estado.status !== "enviando") setEstado({ status: "ocioso" });
+  }
+
   async function handleSubmit(evento: React.FormEvent<HTMLFormElement>) {
     evento.preventDefault();
     if (!arquivo) return;
@@ -100,6 +114,7 @@ export default function UploadPage() {
       const resposta = await uploadCsv(arquivo);
       salvarUltimaImportacaoId(resposta.id);
       setEstado({ status: "concluido", resposta });
+      setArquivo(null);
       await carregarUltimaImportacao();
     } catch (erro) {
       setEstado({ status: "erro", mensagem: (erro as Error).message });
@@ -108,27 +123,140 @@ export default function UploadPage() {
 
   return (
     <section>
-      <p className="text-sm text-slate-500">
-        Envie o CSV exportado do ERP para calcular custo gerencial, giro e desconto máximo por produto.
-      </p>
+      <form
+        onSubmit={handleSubmit}
+        onDragOver={(evento) => {
+          evento.preventDefault();
+          setArrastando(true);
+        }}
+        onDragLeave={() => setArrastando(false)}
+        onDrop={(evento) => {
+          evento.preventDefault();
+          setArrastando(false);
+          const arquivoSolto = evento.dataTransfer.files?.[0];
+          if (arquivoSolto) escolherArquivo(arquivoSolto);
+        }}
+        className="rounded-2xl border border-slate-200 bg-white p-5 shadow-md"
+      >
+        <p className="mb-4 text-sm text-slate-600">
+          Envie o CSV exportado do ERP para calcular custo gerencial, giro e desconto máximo por produto.
+        </p>
 
-      <div className="mt-4 grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-md">
-          <h2 className="text-sm font-semibold text-slate-800">Formato esperado do CSV</h2>
+        <input
+          id="arquivo-csv"
+          type="file"
+          accept=".csv"
+          aria-label="Arquivo CSV do ERP"
+          onChange={(evento) => {
+            escolherArquivo(evento.target.files?.[0] ?? null);
+            // Permite escolher o mesmo arquivo de novo depois de removê-lo.
+            evento.target.value = "";
+          }}
+          className="sr-only"
+        />
 
-          <div className="mt-4 space-y-3 text-sm text-slate-600">
-            <p>
-              <span className="font-medium text-slate-700">Delimitador:</span> ponto e vírgula, vírgula
-              ou tab (detectado automaticamente)
-            </p>
-            <p>
-              <span className="font-medium text-slate-700">Datas:</span> formato dd/mm/aaaa (ex:
-              02/10/2025)
-            </p>
-            <p>
-              <span className="font-medium text-slate-700">Valores monetários:</span> R$ 1.234,56,
-              1234,56 ou 1234.56. Valores ambíguos, como 1.234 ou 1,234.50, são recusados.
-            </p>
+        {arquivo ? (
+          <div
+            className={`flex flex-wrap items-center gap-3 rounded-xl border-2 px-4 py-4 transition-colors ${
+              arrastando ? "border-dashed border-blue-400 bg-blue-50" : "border-slate-200 bg-slate-50"
+            }`}
+          >
+            <FileText className="shrink-0 text-blue-600" size={28} aria-hidden="true" />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium text-slate-800" title={arquivo.name}>
+                {arquivo.name}
+              </p>
+              <p className="text-xs text-slate-500">
+                {formatarTamanho(arquivo.size)} ·{" "}
+                <label
+                  htmlFor="arquivo-csv"
+                  className="cursor-pointer font-medium hover:text-slate-800 hover:underline"
+                >
+                  Escolher outro arquivo
+                </label>
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => escolherArquivo(null)}
+              disabled={estado.status === "enviando"}
+              aria-label="Remover arquivo"
+              className="cursor-pointer rounded-md p-1.5 text-slate-400 hover:bg-slate-200 hover:text-slate-700 disabled:cursor-not-allowed"
+            >
+              <X size={18} aria-hidden="true" />
+            </button>
+            <button
+              type="submit"
+              disabled={estado.status === "enviando"}
+              className="flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:cursor-wait disabled:opacity-70 max-sm:w-full"
+            >
+              <UploadCloud size={18} aria-hidden="true" />
+              {estado.status === "enviando" ? "Importando..." : "Importar arquivo"}
+            </button>
+          </div>
+        ) : (
+          // Label nativo: o clique abre o seletor de arquivo sem precisar de onClick.
+          <label
+            htmlFor="arquivo-csv"
+            className={`flex cursor-pointer items-center justify-center gap-4 rounded-xl border-2 border-dashed px-6 py-6 transition-colors ${
+              arrastando ? "border-blue-400 bg-blue-50" : "border-slate-300 hover:border-blue-400 hover:bg-slate-50"
+            }`}
+          >
+            <UploadCloud className="shrink-0 text-slate-400" size={32} aria-hidden="true" />
+            <span>
+              <span className="block text-sm font-medium text-slate-700">
+                Arraste o arquivo aqui ou clique para escolher
+              </span>
+              <span className="block text-xs text-slate-500">Apenas arquivos .csv</span>
+            </span>
+          </label>
+        )}
+
+        {estado.status === "concluido" && (
+          <p
+            role="status"
+            className="mt-4 flex flex-wrap items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800"
+          >
+            <CheckCircle2 size={16} className="shrink-0" aria-hidden="true" />
+            <span>
+              Importação concluída: {estado.resposta.linhas_importadas} linha
+              {estado.resposta.linhas_importadas === 1 ? "" : "s"} importada
+              {estado.resposta.linhas_importadas === 1 ? "" : "s"}.
+            </span>
+            <Link
+              to="/dashboard"
+              className="ml-auto inline-flex items-center gap-1 font-semibold text-green-800 hover:underline"
+            >
+              Ver Visão geral
+              <ArrowRight size={14} aria-hidden="true" />
+            </Link>
+          </p>
+        )}
+
+        {/* Formato do CSV: regras numa linha; colunas recolhidas para consulta. */}
+        <p className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-500">
+          <span>
+            <span className="font-semibold text-slate-700">Separador:</span> ponto e vírgula, vírgula ou tab
+          </span>
+          <span aria-hidden="true">·</span>
+          <span>
+            <span className="font-semibold text-slate-700">Datas:</span> dd/mm/aaaa
+          </span>
+          <span aria-hidden="true">·</span>
+          <span className="inline-flex items-center gap-1">
+            <span>
+              <span className="font-semibold text-slate-700">Valores:</span> R$ 1.234,56, 1234,56 ou 1234.56
+            </span>
+            <HelpTooltip texto="Valores ambíguos, como 1.234 ou 1,234.50, são recusados: não dá para saber se o ponto ou a vírgula separa os milhares ou os centavos." />
+          </span>
+        </p>
+
+        <details className="group mt-3">
+          <summary className="flex w-fit cursor-pointer list-none items-center gap-1 text-xs font-medium text-blue-700 hover:underline [&::-webkit-details-marker]:hidden">
+            <ChevronRight size={14} className="transition-transform group-open:rotate-90" aria-hidden="true" />
+            Ver colunas aceitas ({COLUNAS_OBRIGATORIAS.length} obrigatórias, {COLUNAS_OPCIONAIS.length} opcionais)
+          </summary>
+          <div className="mt-3 space-y-4">
             <div>
               <p className="text-xs font-medium tracking-wide text-slate-500 uppercase">Obrigatórias</p>
               <ul className="mt-2 flex flex-wrap gap-1.5">
@@ -153,60 +281,8 @@ export default function UploadPage() {
               </ul>
             </div>
           </div>
-        </div>
-
-        <form
-          onSubmit={handleSubmit}
-          className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-md"
-        >
-          <label htmlFor="arquivo-csv" className="sr-only">
-            Arquivo CSV do ERP
-          </label>
-          {/* Label nativo: o clique abre o seletor de arquivo sem precisar de onClick. */}
-          <label
-            htmlFor="arquivo-csv"
-            onDragOver={(evento) => {
-              evento.preventDefault();
-              setArrastando(true);
-            }}
-            onDragLeave={() => setArrastando(false)}
-            onDrop={(evento) => {
-              evento.preventDefault();
-              setArrastando(false);
-              const arquivoSolto = evento.dataTransfer.files?.[0];
-              if (arquivoSolto) setArquivo(arquivoSolto);
-            }}
-            className={`flex flex-1 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-6 py-8 text-center transition-colors ${
-              arrastando ? "border-blue-400 bg-blue-50" : "border-slate-300 hover:border-slate-400"
-            }`}
-          >
-            <UploadCloud className="text-slate-400" size={32} />
-            <span className="text-sm font-medium text-slate-700">
-              Arraste o arquivo aqui ou clique para escolher
-            </span>
-            <span className="text-xs text-slate-500">
-              {arquivo ? arquivo.name : "Nenhum arquivo selecionado"}
-            </span>
-            <input
-              id="arquivo-csv"
-              type="file"
-              accept=".csv"
-              onChange={(evento) => setArquivo(evento.target.files?.[0] ?? null)}
-              className="sr-only"
-            />
-          </label>
-
-          <div className="mt-4 flex justify-center">
-            <button
-              type="submit"
-              disabled={!arquivo || estado.status === "enviando"}
-              className="rounded-lg bg-blue-600 px-6 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300"
-            >
-              {estado.status === "enviando" ? "Importando..." : "Importar"}
-            </button>
-          </div>
-        </form>
-      </div>
+        </details>
+      </form>
 
       {estado.status === "erro" && (
         <p role="alert" className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">

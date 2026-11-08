@@ -71,6 +71,39 @@ describe("ProdutosPage", () => {
     expect(screen.getAllByRole("row")).toHaveLength(4); // 1 cabeçalho + 3 produtos
   });
 
+  it("mostra o código abaixo do nome e o desconto em R$ com o % embaixo", async () => {
+    renderizarPagina();
+
+    await waitFor(() => expect(screen.getByText("Filtro de óleo")).toBeInTheDocument());
+    const linha = screen.getAllByRole("row")[1];
+    expect(within(linha).getByText("AP-1")).toBeInTheDocument();
+    expect(within(linha).getByText("R$ 5,00")).toBeInTheDocument();
+    expect(within(linha).getByText("10,00%")).toBeInTheDocument();
+  });
+
+  it("ordena por nome e por classificação ao clicar no cabeçalho", async () => {
+    const usuario = userEvent.setup();
+    renderizarPagina();
+
+    await waitFor(() => expect(screen.getByText("Filtro de óleo")).toBeInTheDocument());
+    const nomesNaOrdem = () =>
+      screen
+        .getAllByRole("row")
+        .slice(1)
+        .map((linha) => within(linha).getAllByRole("cell")[0].querySelector("p")?.textContent);
+
+    await usuario.click(screen.getByRole("button", { name: "Nome" }));
+    await usuario.click(screen.getByRole("button", { name: "Nome" }));
+    expect(nomesNaOrdem()).toEqual(["Vela de ignição", "Pastilha de freio", "Filtro de óleo"]);
+
+    await usuario.click(screen.getByRole("button", { name: "Classificação" }));
+    expect(nomesNaOrdem()).toEqual(["Filtro de óleo", "Pastilha de freio", "Vela de ignição"]);
+    expect(screen.getByRole("columnheader", { name: /classificação/i })).toHaveAttribute(
+      "aria-sort",
+      "ascending",
+    );
+  });
+
   it("filtra a tabela por classificação", async () => {
     const usuario = userEvent.setup();
     renderizarPagina();

@@ -1,10 +1,11 @@
+import { Info } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { SELOS_DESCONTO, type TipoSituacaoDesconto } from "../utils/situacaoDesconto";
 
 const PASSOS = [
   "Importe o CSV do estoque na tela de Upload.",
-  "Veja os indicadores gerais na Visão geral (produtos críticos, valor imobilizado, potencial de recuperação).",
+  "Veja os indicadores na Visão geral: valor imobilizado, valor crítico e potencial de recuperação, por unidade e em estoque. Clique numa prioridade ou num produto do Top 5 para abrir a tabela de Produtos já filtrada.",
   "Consulte a tabela de Produtos para detalhes por item e desconto máximo sugerido.",
   "Use os descontos sugeridos para planejar suas promoções.",
 ];
@@ -223,8 +224,8 @@ export default function AjudaPage() {
         <h3 className="mt-5 text-sm font-semibold text-slate-800">Quando o desconto é zero</h3>
         <p className="mt-1 text-sm text-slate-600">
           Se o preço de venda não está acima do preço mínimo, não há espaço para desconto. Nesse caso,
-          a tabela de Produtos mostra um selo no lugar do percentual, com a explicação ao passar o
-          mouse. Um indicador ao lado do total de produtos resume quantos estão nessa situação, e a coluna
+          a coluna Desconto sugerido da tabela de Produtos mostra um selo no lugar do valor em R$ e do
+          percentual, com a explicação ao passar o mouse. Um indicador ao lado do total de produtos resume quantos estão nessa situação, e a coluna
           Observação do arquivo exportado traz a mesma explicação. Nos exemplos abaixo, o custo
           gerencial é R$ 22,69 e o preço mínimo é R$ 24,96.
         </p>
@@ -242,8 +243,9 @@ export default function AjudaPage() {
                 <tr key={tipo}>
                   <td className="py-2 pr-4">
                     <span
-                      className={`inline-block rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset ${SELOS_DESCONTO[tipo].cores}`}
+                      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset ${SELOS_DESCONTO[tipo].cores}`}
                     >
+                      <Info size={12} className="text-slate-500" aria-hidden="true" />
                       {SELOS_DESCONTO[tipo].rotulo}
                     </span>
                   </td>

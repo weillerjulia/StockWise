@@ -1,8 +1,10 @@
+import { Info } from "lucide-react";
 import { useState } from "react";
 
 import { SELOS_DESCONTO, type SituacaoDesconto } from "../utils/situacaoDesconto";
 
 const ALTURA_ESTIMADA_TOOLTIP = 100;
+const LARGURA_TOOLTIP = 240;
 
 export default function SeloSemDesconto({ situacao }: { situacao: SituacaoDesconto }) {
   const [ancora, setAncora] = useState<DOMRect | null>(null);
@@ -10,6 +12,11 @@ export default function SeloSemDesconto({ situacao }: { situacao: SituacaoDescon
 
   function abrir(evento: { currentTarget: HTMLElement }) {
     setAncora(evento.currentTarget.getBoundingClientRect());
+  }
+
+  // O selo fica na última coluna: alinha o tooltip pela direita para não sair da tela.
+  function esquerda(retangulo: DOMRect) {
+    return Math.max(8, Math.min(retangulo.left, retangulo.right - LARGURA_TOOLTIP));
   }
 
   function fechar() {
@@ -20,8 +27,8 @@ export default function SeloSemDesconto({ situacao }: { situacao: SituacaoDescon
   const posicao =
     ancora &&
     (ancora.bottom + ALTURA_ESTIMADA_TOOLTIP > window.innerHeight
-      ? { bottom: window.innerHeight - ancora.top + 6, left: ancora.left }
-      : { top: ancora.bottom + 6, left: ancora.left });
+      ? { bottom: window.innerHeight - ancora.top + 6, left: esquerda(ancora) }
+      : { top: ancora.bottom + 6, left: esquerda(ancora) });
 
   return (
     <button
@@ -30,8 +37,9 @@ export default function SeloSemDesconto({ situacao }: { situacao: SituacaoDescon
       onMouseLeave={fechar}
       onFocus={abrir}
       onBlur={fechar}
-      className={`relative inline-block cursor-help whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset ${cores}`}
+      className={`relative inline-flex cursor-help items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset ${cores}`}
     >
+      <Info size={12} className="text-slate-500" aria-hidden="true" />
       {rotulo}
       <span className="sr-only">{situacao.mensagem}</span>
       {posicao && (

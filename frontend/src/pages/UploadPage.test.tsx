@@ -1,9 +1,18 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { salvarUltimaImportacaoId } from "../api/storage";
 import UploadPage from "./UploadPage";
+
+function renderizar() {
+  return render(
+    <MemoryRouter>
+      <UploadPage />
+    </MemoryRouter>,
+  );
+}
 
 describe("UploadPage", () => {
   beforeEach(() => {
@@ -30,7 +39,7 @@ describe("UploadPage", () => {
     } as Response);
 
     const usuario = userEvent.setup();
-    render(<UploadPage />);
+    renderizar();
 
     const arquivo = new File(["codigo;nome\nAP-1;Filtro"], "estoque.csv", { type: "text/csv" });
     const input = screen.getByLabelText(/arquivo csv/i);
@@ -38,6 +47,8 @@ describe("UploadPage", () => {
     await usuario.click(screen.getByRole("button", { name: /importar/i }));
 
     await waitFor(() => expect(screen.getByText(/resumo da importação/i)).toBeInTheDocument());
+    expect(screen.getByRole("status")).toHaveTextContent("Importação concluída: 1 linha importada.");
+    expect(screen.getByRole("link", { name: /ver visão geral/i })).toHaveAttribute("href", "/dashboard");
 
     expect(screen.getByText(/total de linhas/i).nextElementSibling).toHaveTextContent("2");
     expect(screen.getByText(/^importadas$/i).nextElementSibling).toHaveTextContent("1");
@@ -47,7 +58,7 @@ describe("UploadPage", () => {
   });
 
   it("mostra mensagem de que não há importação quando nunca houve upload", async () => {
-    render(<UploadPage />);
+    renderizar();
 
     await waitFor(() =>
       expect(screen.getByText(/nenhuma importação realizada ainda/i)).toBeInTheDocument(),
@@ -70,9 +81,27 @@ describe("UploadPage", () => {
       }),
     } as Response);
 
-    render(<UploadPage />);
+    renderizar();
 
     await waitFor(() => expect(screen.getByText("Concluída")).toBeInTheDocument());
     expect(screen.getByText(/^última importação$/i)).toBeInTheDocument();
+  });
+
+  it("mostra o arquivo escolhido com opção de remover antes de importar", async () => {
+    vi.mocked(fetch).mockResolvedValue({ ok: false, status: 404, json: async () => ({}) } as Response);
+    const usuario = userEvent.setup();
+    renderizar();
+
+    expect(screen.queryByRole("button", { name: /importar/i })).not.toBeInTheDocument();
+
+    const arquivo = new File(["codigo;nome\nAP-1;Filtro"], "estoque.csv", { type: "text/csv" });
+    await usuario.upload(screen.getByLabelText(/arquivo csv/i), arquivo);
+
+    expect(screen.getByText("estoque.csv")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /importar arquivo/i })).toBeEnabled();
+
+    await usuario.click(screen.getByRole("button", { name: /remover arquivo/i }));
+    expect(screen.queryByText("estoque.csv")).not.toBeInTheDocument();
+    expect(screen.getByText("Arraste o arquivo aqui ou clique para escolher")).toBeInTheDocument();
   });
 });

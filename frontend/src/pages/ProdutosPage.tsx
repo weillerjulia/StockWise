@@ -32,10 +32,28 @@ interface LinhaProduto {
 }
 
 type ChaveOrdenacao =
+  | "nome_produto"
+  | "categoria"
   | "custo_gerencial_composto"
+  | "preco_venda_unitario"
   | "giro_90d"
+  | "classificacao"
   | "desconto_maximo_percentual"
   | "desconto_maximo_valor";
+
+/** Compara em ordem crescente; valores vazios ficam sempre no começo. */
+function compararLinhas(a: LinhaProduto, b: LinhaProduto, chave: ChaveOrdenacao): number {
+  if (chave === "classificacao") {
+    return ORDEM_CLASSIFICACAO.indexOf(a.classificacao) - ORDEM_CLASSIFICACAO.indexOf(b.classificacao);
+  }
+  const valorA = a[chave];
+  const valorB = b[chave];
+  if (valorA == null || valorB == null) return (valorA == null ? 0 : 1) - (valorB == null ? 0 : 1);
+  if (typeof valorA === "string" && typeof valorB === "string") {
+    return valorA.localeCompare(valorB, "pt-BR", { sensitivity: "base" });
+  }
+  return Number(valorA) - Number(valorB);
+}
 
 function SelosDoTitulo({
   totalProdutos,
@@ -149,11 +167,7 @@ export default function ProdutosPage() {
     if (!ordenacao) return filtradas;
 
     const sinal = ordenacao.direcao === "asc" ? 1 : -1;
-    return [...filtradas].sort((a, b) => {
-      const valorA = a[ordenacao.chave] ?? -Infinity;
-      const valorB = b[ordenacao.chave] ?? -Infinity;
-      return (valorA - valorB) * sinal;
-    });
+    return [...filtradas].sort((a, b) => compararLinhas(a, b, ordenacao.chave) * sinal);
   }, [linhas, filtroClassificacao, termoBusca, ordenacao]);
 
   const definirExtrasDoTitulo = useDefinirExtrasDoTitulo();
@@ -203,11 +217,49 @@ export default function ProdutosPage() {
     return ordenacao.direcao === "asc" ? "ascending" : "descending";
   }
 
+  function cabecalhoOrdenavel({
+    chave,
+    rotulo,
+    largura,
+    numerico = false,
+    ajuda,
+  }: {
+    chave: ChaveOrdenacao;
+    rotulo: string;
+    largura: string;
+    numerico?: boolean;
+    ajuda?: string;
+  }) {
+    return (
+      <th
+        className={`sticky top-0 z-10 ${largura} border-b border-slate-200 bg-slate-50 px-4 py-3 ${
+          numerico ? "text-right" : "text-left"
+        }`}
+        aria-sort={ariaSort(chave)}
+      >
+        <div className={`flex items-center gap-1 ${numerico ? "justify-end" : ""}`}>
+          <button
+            type="button"
+            onClick={() => alternarOrdenacao(chave)}
+            className={`flex cursor-pointer items-center gap-1 tracking-wide uppercase hover:text-slate-900 ${
+              numerico ? "text-right" : "text-left"
+            }`}
+          >
+            {rotulo}
+            {iconeOrdenacao(chave)}
+          </button>
+          {ajuda && <HelpTooltip texto={ajuda} alinhar="direita" />}
+        </div>
+      </th>
+    );
+  }
+
   function exportarProdutos() {
     const cabecalho = [
+      "Código",
       "Nome",
       "Categoria",
-      "Custo gerencial",
+      "Custo gerencial (por unidade)",
       "Preço de venda",
       "Giro (90d)",
       "Classificação",
@@ -217,6 +269,7 @@ export default function ProdutosPage() {
     ];
 
     const linhasCsv = linhasFiltradas.map((linha) => [
+      linha.codigo_produto,
       linha.nome_produto,
       linha.categoria ?? "",
       formatarMoeda(linha.custo_gerencial_composto),
@@ -313,119 +366,126 @@ export default function ProdutosPage() {
       </div>
 
       <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-md">
-        <div className="overflow-x-auto">
-        <table className="w-full min-w-[960px] table-fixed text-sm">
-          <thead>
-            <tr className="text-left text-xs font-medium tracking-wide text-slate-600 uppercase">
-              <th className="w-[18%] px-4 py-3">Nome</th>
-              <th className="w-[10%] px-4 py-3">Categoria</th>
-              <th className="w-[11%] px-4 py-3" aria-sort={ariaSort("custo_gerencial_composto")}>
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => alternarOrdenacao("custo_gerencial_composto")}
-                    className="flex items-center gap-1 tracking-wide text-slate-600 uppercase hover:text-slate-700"
-                  >
-                    Custo gerencial
-                    {iconeOrdenacao("custo_gerencial_composto")}
-                  </button>
-                  <HelpTooltip
-                    texto="Custo de aquisição + armazenagem + oportunidade, proporcionais ao tempo em estoque. Ex: R$ 100 parado 30 dias pode chegar a R$ 101,99."
-                    alinhar="direita"
-                  />
-                </div>
-              </th>
-              <th className="w-[11%] px-4 py-3">Preço de venda</th>
-              <th className="w-[8%] px-4 py-3" aria-sort={ariaSort("giro_90d")}>
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => alternarOrdenacao("giro_90d")}
-                    className="flex items-center gap-1 tracking-wide text-slate-600 uppercase hover:text-slate-700"
-                  >
-                    Giro (90d)
-                    {iconeOrdenacao("giro_90d")}
-                  </button>
-                  <HelpTooltip
-                    texto="Vendas dos últimos 90 dias em relação ao estoque, projetadas para um ano. Ex: giro 5,89 = nesse ritmo, o estoque giraria quase 6x por ano; perto de 0 = produto parado."
-                    alinhar="direita"
-                  />
-                </div>
-              </th>
-              <th className="w-[13%] px-4 py-3">
-                <div className="flex items-center gap-1">
-                  Classificação
-                  <HelpTooltip
-                    texto="Combina giro, custo gerencial e estoque numa prioridade de ação. Alta = parado e caro, precisa de atenção. Baixa = saudável."
-                    alinhar="direita"
-                  />
-                </div>
-              </th>
-              <th className="w-[14%] px-4 py-3" aria-sort={ariaSort("desconto_maximo_percentual")}>
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => alternarOrdenacao("desconto_maximo_percentual")}
-                    className="flex items-center gap-1 tracking-wide text-slate-600 uppercase hover:text-slate-700"
-                  >
-                    Desconto máximo sugerido (%)
-                    {iconeOrdenacao("desconto_maximo_percentual")}
-                  </button>
-                  <HelpTooltip
-                    texto="Maior desconto possível sem perder a margem mínima de 10%. Ex: preço R$ 34,90, custo R$ 22,69 → até 28,48% (R$ 9,94)."
-                    alinhar="direita"
-                  />
-                </div>
-              </th>
-              <th className="w-[15%] px-4 py-3" aria-sort={ariaSort("desconto_maximo_valor")}>
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => alternarOrdenacao("desconto_maximo_valor")}
-                    className="flex items-center gap-1 tracking-wide text-slate-600 uppercase hover:text-slate-700"
-                  >
-                    Desconto máximo sugerido (R$)
-                    {iconeOrdenacao("desconto_maximo_valor")}
-                  </button>
-                  <HelpTooltip
-                    texto="Maior desconto possível sem perder a margem mínima de 10%. Ex: preço R$ 34,90, custo R$ 22,69 → até 28,48% (R$ 9,94)."
-                    alinhar="direita"
-                  />
-                </div>
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {linhasPaginadas.map((linha) => (
-              <tr key={linha.codigo_produto} className="transition-colors hover:bg-slate-50">
-                <td className="px-4 py-3 font-medium text-slate-800">{linha.nome_produto}</td>
-                <td className="px-4 py-3 text-slate-600">{linha.categoria}</td>
-                <td className="px-4 py-3 text-slate-600">{formatarMoeda(linha.custo_gerencial_composto)}</td>
-                <td className="px-4 py-3 text-slate-600">
-                  {linha.preco_venda_unitario != null ? formatarMoeda(linha.preco_venda_unitario) : "-"}
-                </td>
-                <td className="px-4 py-3 text-slate-600">
-                  {linha.giro_90d != null ? formatarNumero(linha.giro_90d) : "-"}
-                </td>
-                <td className="px-4 py-3">
-                  <ClassificacaoBadge classificacao={linha.classificacao} />
-                </td>
-                <td className="px-4 py-3 font-semibold text-slate-800">
-                  {linha.situacao_desconto ? (
-                    <SeloSemDesconto situacao={linha.situacao_desconto} />
-                  ) : linha.desconto_maximo_percentual != null ? (
-                    `${formatarNumero(linha.desconto_maximo_percentual)}%`
-                  ) : (
-                    "-"
-                  )}
-                </td>
-                <td className="px-4 py-3 font-semibold text-slate-800">
-                  {linha.desconto_maximo_valor != null ? formatarMoeda(linha.desconto_maximo_valor) : "-"}
-                </td>
+        {/* Rolagem própria: o cabeçalho fica fixo e a paginação sempre visível. */}
+        <div className="max-h-[calc(100vh-16rem)] overflow-auto">
+          <table className="w-full min-w-[920px] table-fixed text-sm">
+            <thead>
+              <tr className="text-xs font-medium tracking-wide text-slate-600 uppercase">
+                {cabecalhoOrdenavel({ chave: "nome_produto", rotulo: "Nome", largura: "w-[24%]" })}
+                {cabecalhoOrdenavel({ chave: "categoria", rotulo: "Categoria", largura: "w-[11%]" })}
+                {cabecalhoOrdenavel({
+                  chave: "custo_gerencial_composto",
+                  rotulo: "Custo gerencial",
+                  largura: "w-[12%]",
+                  numerico: true,
+                  ajuda:
+                    "Custo de 1 unidade: aquisição + armazenagem + oportunidade, proporcionais ao tempo em estoque. Ex: R$ 100 parado 30 dias pode chegar a R$ 101,99.",
+                })}
+                {cabecalhoOrdenavel({
+                  chave: "preco_venda_unitario",
+                  rotulo: "Preço de venda",
+                  largura: "w-[11%]",
+                  numerico: true,
+                })}
+                {cabecalhoOrdenavel({
+                  chave: "giro_90d",
+                  rotulo: "Giro (90d)",
+                  largura: "w-[9%]",
+                  numerico: true,
+                  ajuda:
+                    "Vendas dos últimos 90 dias em relação ao estoque, projetadas para um ano. Ex: giro 5,89 = nesse ritmo, o estoque giraria quase 6x por ano; perto de 0 = produto parado.",
+                })}
+                {cabecalhoOrdenavel({
+                  chave: "classificacao",
+                  rotulo: "Classificação",
+                  largura: "w-[15%]",
+                  ajuda:
+                    "Combina giro, custo gerencial e estoque numa prioridade de ação. Alta = parado e caro, precisa de atenção. Baixa = saudável.",
+                })}
+                <th
+                  className="sticky top-0 z-10 w-[18%] border-b border-slate-200 bg-blue-50 px-4 py-3 text-right"
+                  aria-sort={
+                    ordenacao?.chave === "desconto_maximo_valor"
+                      ? ariaSort("desconto_maximo_valor")
+                      : ariaSort("desconto_maximo_percentual")
+                  }
+                >
+                  <div className="flex items-center justify-end gap-1 text-blue-900">
+                    Desconto sugerido
+                    <HelpTooltip
+                      texto="Maior desconto possível por unidade sem perder a margem mínima de 10%. Ex: preço R$ 34,90, custo R$ 22,69 → até R$ 9,94 (28,48%)."
+                      alinhar="direita"
+                    />
+                  </div>
+                  <div className="mt-1 flex justify-end gap-3 normal-case">
+                    <button
+                      type="button"
+                      onClick={() => alternarOrdenacao("desconto_maximo_valor")}
+                      aria-label="Ordenar por desconto em R$"
+                      className="flex cursor-pointer items-center gap-0.5 text-slate-600 hover:text-slate-900"
+                    >
+                      R$
+                      {iconeOrdenacao("desconto_maximo_valor")}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => alternarOrdenacao("desconto_maximo_percentual")}
+                      aria-label="Ordenar por desconto em %"
+                      className="flex cursor-pointer items-center gap-0.5 text-slate-600 hover:text-slate-900"
+                    >
+                      %
+                      {iconeOrdenacao("desconto_maximo_percentual")}
+                    </button>
+                  </div>
+                </th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {linhasPaginadas.map((linha) => (
+                <tr key={linha.codigo_produto} className="group transition-colors hover:bg-slate-50">
+                  <td className="px-4 py-3">
+                    <p className="truncate font-semibold text-slate-800" title={linha.nome_produto}>
+                      {linha.nome_produto}
+                    </p>
+                    <p className="mt-0.5 truncate text-xs text-slate-400">{linha.codigo_produto}</p>
+                  </td>
+                  <td className="truncate px-4 py-3 text-slate-500" title={linha.categoria ?? undefined}>
+                    {linha.categoria ?? "-"}
+                  </td>
+                  <td className="px-4 py-3 text-right text-slate-700 tabular-nums">
+                    {formatarMoeda(linha.custo_gerencial_composto)}
+                  </td>
+                  <td className="px-4 py-3 text-right text-slate-700 tabular-nums">
+                    {linha.preco_venda_unitario != null ? formatarMoeda(linha.preco_venda_unitario) : "-"}
+                  </td>
+                  <td className="px-4 py-3 text-right text-slate-700 tabular-nums">
+                    {linha.giro_90d != null ? formatarNumero(linha.giro_90d) : "-"}
+                  </td>
+                  <td className="px-4 py-3">
+                    <ClassificacaoBadge classificacao={linha.classificacao} />
+                  </td>
+                  <td className="bg-blue-50/50 px-4 py-3 text-right group-hover:bg-blue-50">
+                    {linha.situacao_desconto ? (
+                      <SeloSemDesconto situacao={linha.situacao_desconto} />
+                    ) : linha.desconto_maximo_valor != null ? (
+                      <>
+                        <p className="font-bold text-slate-900 tabular-nums">
+                          {formatarMoeda(linha.desconto_maximo_valor)}
+                        </p>
+                        {linha.desconto_maximo_percentual != null && (
+                          <p className="mt-0.5 text-xs font-medium text-slate-600 tabular-nums">
+                            {formatarNumero(linha.desconto_maximo_percentual)}%
+                          </p>
+                        )}
+                      </>
+                    ) : (
+                      "-"
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
 
         <Pagination
