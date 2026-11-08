@@ -610,7 +610,7 @@ Análise contínua no [SonarQube Cloud](https://sonarcloud.io/project/overview?i
 bugs, vulnerabilidades, code smells, duplicação e cobertura.
 
 <p align="center">
-  <img src="docs/prints/sonarcloud.png" alt="Painel do SonarQube Cloud: Quality Gate aprovado, 3 issues, 0,0% de duplicação e 67,2% de cobertura" width="820"/>
+  <img src="docs/prints/sonarcloud.png" alt="Painel do SonarQube Cloud: Quality Gate aprovado, 3 issues, 0,0% de duplicação e 82,5% de cobertura" width="820"/>
 </p>
 
 | Critério | Nota | Questões em aberto |
@@ -620,7 +620,7 @@ bugs, vulnerabilidades, code smells, duplicação e cobertura.
 | Manutenibilidade | A | 0 |
 | Revisão de security hotspots | A | 0 |
 
-Análise do código completo (*Overall code*) em 07/11/2026.
+Análise do código completo (*Overall code*) em 08/11/2026, commit `4161484`.
 
 ### Privacidade e LGPD
 

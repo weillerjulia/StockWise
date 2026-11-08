@@ -797,17 +797,14 @@ funções e 83,05% das linhas.
 
 ### 7.4 SonarQube Cloud
 
-Os números abaixo são da análise de 07/11/2026, anterior ao redesenho do
-frontend; a cobertura do Sonar só é atualizada na próxima execução do CI.
-
 | Indicador | Resultado | Medido em |
 |---|---|---|
-| Cobertura do projeto | 67,2% | Análise pelo CI (`3abae7b`, 07/11/2026) |
-| Duplicação | 0,0% | Análise pelo CI (`3abae7b`) |
-| Segurança | 3 questões em aberto, nota B | Análise pelo CI (`3abae7b`) |
-| Confiabilidade | 0 questões, nota A | Análise pelo CI (`3abae7b`) |
-| Manutenibilidade | 0 questões, nota A | Análise pelo CI (`3abae7b`) |
-| Security hotspots | 0, nota A | Análise pelo CI (`3abae7b`) |
+| Cobertura do projeto | 82,5% (87,2% das linhas, 71% das condições) | Análise pelo CI (`4161484`, 08/11/2026) |
+| Duplicação | 0,0% | Análise pelo CI (`4161484`) |
+| Segurança | 3 questões em aberto, nota B | Análise pelo CI (`4161484`) |
+| Confiabilidade | 0 questões, nota A | Análise pelo CI (`4161484`) |
+| Manutenibilidade | 0 questões, nota A | Análise pelo CI (`4161484`) |
+| Security hotspots | 0, nota A | Análise pelo CI (`4161484`) |
 
 As questões de confiabilidade foram corrigidas no commit `3abae7b`: área de
 upload como `<label>` nativo, tooltips e selos como `<button>` em vez de `<span>`
@@ -816,7 +813,8 @@ de segurança continuam em aberto, em `api/client.ts` e `api/storage.ts`: o `id`
 da importação, lido do `localStorage`, vai para a URL da API sem validação.
 
 A cobertura do Sonar tem valor diferente das tabelas acima porque reúne backend
-e frontend e também considera as condições do código.
+e frontend e também considera as condições do código. Na análise anterior
+(`3abae7b`, 07/11/2026), antes do redesenho do frontend, ela era de 67,2%.
 
 ### 7.5 Integração contínua
 
