@@ -792,7 +792,7 @@ testes não usam o banco.
 O `exportCsv.ts` fica em 0% porque o teste de exportação substitui a função por
 um mock e confere os dados que a tela envia, não a geração do arquivo.
 
-Total do frontend: 82,19% das instruções, 70,53% dos desvios, 83% das
+Total do frontend: 82,19% das instruções, 70,4% dos desvios, 83% das
 funções e 83,05% das linhas.
 
 ### 7.4 SonarQube Cloud
