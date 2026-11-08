@@ -5,7 +5,19 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { salvarUltimaImportacaoId } from "../api/storage";
 import { exportarCsv } from "../utils/exportCsv";
+import AppLayout from "../components/layout/AppLayout";
 import ProdutosPage from "./ProdutosPage";
+
+// Renderiza dentro do layout: os selos de total e de aviso ficam na Topbar, ao lado do título.
+function renderizarPagina() {
+  return render(
+    <MemoryRouter initialEntries={["/produtos"]}>
+      <AppLayout>
+        <ProdutosPage />
+      </AppLayout>
+    </MemoryRouter>,
+  );
+}
 
 vi.mock("../utils/exportCsv", () => ({ exportarCsv: vi.fn() }));
 
@@ -50,11 +62,7 @@ describe("ProdutosPage", () => {
   });
 
   it("renderiza todas as linhas de produtos da última importação", async () => {
-    render(
-      <MemoryRouter>
-        <ProdutosPage />
-      </MemoryRouter>,
-    );
+    renderizarPagina();
 
     await waitFor(() => expect(screen.getByText("Filtro de óleo")).toBeInTheDocument());
 
@@ -65,11 +73,7 @@ describe("ProdutosPage", () => {
 
   it("filtra a tabela por classificação", async () => {
     const usuario = userEvent.setup();
-    render(
-      <MemoryRouter>
-        <ProdutosPage />
-      </MemoryRouter>,
-    );
+    renderizarPagina();
 
     await waitFor(() => expect(screen.getByText("Filtro de óleo")).toBeInTheDocument());
 
@@ -93,11 +97,7 @@ describe("ProdutosPage", () => {
     linha.resultados_analise.desconto_maximo_valor = 0;
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => [linha] }));
 
-    render(
-      <MemoryRouter>
-        <ProdutosPage />
-      </MemoryRouter>,
-    );
+    renderizarPagina();
 
     await waitFor(() => expect(screen.getByText(rotulo)).toBeInTheDocument());
 
@@ -123,11 +123,7 @@ describe("ProdutosPage", () => {
     ];
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => dados }));
 
-    render(
-      <MemoryRouter>
-        <ProdutosPage />
-      </MemoryRouter>,
-    );
+    renderizarPagina();
 
     const aviso = await screen.findByRole("status");
     const texto = /^3 sem desconto Sem espaço para desconto: 1 com prejuízo e 2 sem margem\./;
@@ -138,11 +134,7 @@ describe("ProdutosPage", () => {
   });
 
   it("não mostra o indicador quando todos os produtos permitem desconto", async () => {
-    render(
-      <MemoryRouter>
-        <ProdutosPage />
-      </MemoryRouter>,
-    );
+    renderizarPagina();
 
     await waitFor(() => expect(screen.getByText("Filtro de óleo")).toBeInTheDocument());
 
@@ -154,11 +146,7 @@ describe("ProdutosPage", () => {
     const dados = [DADOS_MOCK[0], criarLinhaSemDesconto("AP-4", 430.04, 469)];
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => dados }));
 
-    render(
-      <MemoryRouter>
-        <ProdutosPage />
-      </MemoryRouter>,
-    );
+    renderizarPagina();
 
     await usuario.click(await screen.findByRole("button", { name: /exportar excel/i }));
 
@@ -166,5 +154,40 @@ describe("ProdutosPage", () => {
     expect(cabecalho.at(-1)).toBe("Observação");
     expect(linhas[0].at(-1)).toBe("");
     expect(linhas[1].at(-1)).toMatch(/faltam R\$\s4,04 para atingir o preço mínimo de R\$\s473,04/);
+  });
+
+  it("mostra o total geral ao lado do título e o total filtrado no rodapé", async () => {
+    const usuario = userEvent.setup();
+    renderizarPagina();
+
+    await waitFor(() => expect(screen.getByText("Filtro de óleo")).toBeInTheDocument());
+    const cabecalho = screen.getByRole("banner");
+    expect(await within(cabecalho).findByText("3 produtos")).toBeInTheDocument();
+    expect(screen.getByText("Mostrando 1 a 3 de 3 produtos")).toBeInTheDocument();
+
+    await usuario.selectOptions(screen.getByLabelText(/classificação/i), "Prioridade Alta");
+
+    expect(await within(cabecalho).findByText("3 produtos")).toBeInTheDocument();
+    expect(screen.getByText("Mostrando 1 a 1 de 1 (filtrado de 3 produtos)")).toBeInTheDocument();
+  });
+
+  it("navega pelas páginas usando os números da paginação", async () => {
+    const usuario = userEvent.setup();
+    const dados = Array.from({ length: 12 }, (_, i) =>
+      criarLinha(`AP-${i + 1}`, `Produto ${i + 1}`, "Prioridade Baixa", 10 + i),
+    );
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => dados }));
+    renderizarPagina();
+
+    await waitFor(() => expect(screen.getByText("Produto 1")).toBeInTheDocument());
+    expect(screen.getByRole("button", { name: "Página 1" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("button", { name: "Página anterior" })).toBeDisabled();
+
+    await usuario.click(screen.getByRole("button", { name: "Página 2" }));
+
+    expect(screen.getByText("Produto 11")).toBeInTheDocument();
+    expect(screen.queryByText("Produto 1")).not.toBeInTheDocument();
+    expect(screen.getByText("Mostrando 11 a 12 de 12 produtos")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Próxima página" })).toBeDisabled();
   });
 });

@@ -7,6 +7,9 @@ describe("App", () => {
   it("renderiza o título StockWise", () => {
     render(<App />);
 
-    expect(screen.getByText("StockWise")).toBeInTheDocument();
+    // O nome é dividido em "Stock" + <span>Wise</span> para colorir cada parte.
+    expect(
+      screen.getByText((_, elemento) => elemento?.tagName === "SPAN" && elemento.textContent === "StockWise"),
+    ).toBeInTheDocument();
   });
 });

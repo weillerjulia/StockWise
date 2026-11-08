@@ -1,11 +1,12 @@
 import { AlertTriangle, ChevronDown, ChevronsUpDown, ChevronUp, Download, Search } from "lucide-react";
 import type { ReactNode } from "react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 import type { Classificacao } from "../api/types";
 import ClassificacaoBadge from "../components/ClassificacaoBadge";
 import HelpTooltip from "../components/HelpTooltip";
+import { useDefinirExtrasDoTitulo } from "../components/layout/ExtrasDoTitulo";
 import Pagination from "../components/Pagination";
 import SeloSemDesconto from "../components/SeloSemDesconto";
 import { useResultadosUltimaImportacao } from "../hooks/useResultadosUltimaImportacao";
@@ -34,6 +35,42 @@ type ChaveOrdenacao =
   | "giro_90d"
   | "desconto_maximo_percentual"
   | "desconto_maximo_valor";
+
+function SelosDoTitulo({
+  totalProdutos,
+  aviso,
+}: {
+  totalProdutos: number;
+  aviso: { rotulo: string; detalhe: string } | null;
+}) {
+  return (
+    <>
+      <span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 ring-1 ring-blue-200 ring-inset">
+        {totalProdutos} produto{totalProdutos === 1 ? "" : "s"}
+      </span>
+
+      {aviso && (
+        // O status fica no span para leitores de tela; o botão só dá foco pelo teclado.
+        <span role="status" className="inline-flex">
+          <button
+            type="button"
+            className="group relative inline-flex cursor-help items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800 ring-1 ring-amber-300 ring-inset"
+          >
+            <AlertTriangle size={13} aria-hidden="true" />
+            {aviso.rotulo}
+            <span className="sr-only"> {aviso.detalhe}</span>
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute top-full left-0 z-20 mt-1.5 w-64 rounded-md bg-slate-800 px-2.5 py-1.5 text-left text-xs font-normal text-white opacity-0 transition-opacity group-hover:opacity-100 group-focus:opacity-100"
+            >
+              {aviso.detalhe}
+            </span>
+          </button>
+        </span>
+      )}
+    </>
+  );
+}
 
 export default function ProdutosPage() {
   const estado = useResultadosUltimaImportacao();
@@ -113,6 +150,17 @@ export default function ProdutosPage() {
       return (valorA - valorB) * sinal;
     });
   }, [linhas, filtroClassificacao, termoBusca, ordenacao]);
+
+  const definirExtrasDoTitulo = useDefinirExtrasDoTitulo();
+  const carregado = estado.status === "sucesso";
+  const totalProdutos = linhas.length;
+
+  // Selos ao lado do título "Produtos": total geral (ignora filtros) e aviso de sem desconto.
+  useEffect(() => {
+    if (!carregado) return;
+    definirExtrasDoTitulo(<SelosDoTitulo totalProdutos={totalProdutos} aviso={avisoSemDesconto} />);
+    return () => definirExtrasDoTitulo(null);
+  }, [carregado, totalProdutos, avisoSemDesconto, definirExtrasDoTitulo]);
 
   const totalPaginas = Math.max(1, Math.ceil(linhasFiltradas.length / itensPorPagina));
   const paginaCorrigida = Math.min(paginaAtual, totalPaginas);
@@ -248,30 +296,6 @@ export default function ProdutosPage() {
           />
         </div>
 
-        <span className="text-sm text-slate-500">
-          {linhasFiltradas.length} produto{linhasFiltradas.length === 1 ? "" : "s"}
-        </span>
-
-        {avisoSemDesconto && (
-          // O status fica no span para leitores de tela; o botão só dá foco pelo teclado.
-          <span role="status" className="inline-flex">
-            <button
-              type="button"
-              className="group relative inline-flex cursor-help items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800 ring-1 ring-amber-300 ring-inset"
-            >
-              <AlertTriangle size={13} aria-hidden="true" />
-              {avisoSemDesconto.rotulo}
-              <span className="sr-only"> {avisoSemDesconto.detalhe}</span>
-              <span
-                aria-hidden="true"
-                className="pointer-events-none absolute top-full left-0 z-20 mt-1.5 w-64 rounded-md bg-slate-800 px-2.5 py-1.5 text-left text-xs font-normal text-white opacity-0 transition-opacity group-hover:opacity-100 group-focus:opacity-100"
-              >
-                {avisoSemDesconto.detalhe}
-              </span>
-            </button>
-          </span>
-        )}
-
         <button
           type="button"
           onClick={exportarProdutos}
@@ -403,6 +427,9 @@ export default function ProdutosPage() {
           paginaAtual={paginaCorrigida}
           totalPaginas={totalPaginas}
           onMudarPagina={setPaginaAtual}
+          totalItens={linhasFiltradas.length}
+          totalSemFiltro={linhas.length}
+          rotuloItens="produtos"
           itensPorPagina={itensPorPagina}
           opcoesItensPorPagina={OPCOES_ITENS_POR_PAGINA}
           onMudarItensPorPagina={(itens) => {

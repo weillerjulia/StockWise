@@ -1,5 +1,6 @@
-import { HelpCircle, LayoutDashboard, Package, Upload, Warehouse } from "lucide-react";
+import { HelpCircle, LayoutDashboard, Package, Upload } from "lucide-react";
 import { NavLink } from "react-router-dom";
+import LogoSimbolo from "../LogoSimbolo";
 
 const ITENS_NAV = [
   { to: "/", label: "Upload", icone: Upload, fim: true },
@@ -11,11 +12,11 @@ const ITENS_NAV = [
 export default function Sidebar() {
   return (
     <aside className="flex h-full w-64 shrink-0 flex-col border-r border-slate-200 bg-white shadow-sm">
-      <div className="flex items-center gap-2.5 px-6 py-6">
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-600">
-          <Warehouse size={18} className="text-white" />
+      <div className="flex items-center gap-3 px-6 py-6">
+        <LogoSimbolo tamanho={36} className="shrink-0" />
+        <span className="text-xl font-extrabold tracking-tight text-slate-900">
+          Stock<span className="text-blue-600">Wise</span>
         </span>
-        <span className="text-lg font-semibold text-slate-800">StockWise</span>
       </div>
 
       <nav className="flex flex-col gap-1 px-3">
