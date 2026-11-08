@@ -12,7 +12,13 @@ import {
 } from "recharts";
 
 import type { Classificacao } from "../api/types";
+import {
+  COR_CLASSIFICACAO,
+  FORMATO_CLASSIFICACAO,
+  ORDEM_CLASSIFICACAO,
+} from "../utils/classificacao";
 import { formatarMoeda, formatarNumero } from "../utils/format";
+import MarcadorClassificacao from "./MarcadorClassificacao";
 
 export interface PontoMapaPrioridade {
   nome_produto: string;
@@ -21,39 +27,10 @@ export interface PontoMapaPrioridade {
   giro_90d: number;
 }
 
-const ORDEM_CLASSIFICACAO: Classificacao[] = ["Prioridade Alta", "Prioridade Média", "Prioridade Baixa"];
-
-// Cores mais fortes que as do gráfico de barras: em pontos pequenos os tons
-// pastel somem no fundo branco. O formato do marcador repete a classificação
-// para quem não distingue vermelho/verde.
-const COR_PONTO: Record<Classificacao, string> = {
-  "Prioridade Alta": "#dc2626",
-  "Prioridade Média": "#f59e0b",
-  "Prioridade Baixa": "#16a34a",
-};
-
-const FORMATO_PONTO: Record<Classificacao, "triangle" | "diamond" | "circle"> = {
-  "Prioridade Alta": "triangle",
-  "Prioridade Média": "diamond",
-  "Prioridade Baixa": "circle",
-};
-
 function mediana(valores: number[]): number {
   const ordenados = [...valores].sort((a, b) => a - b);
   const meio = Math.floor(ordenados.length / 2);
   return ordenados.length % 2 === 0 ? (ordenados[meio - 1] + ordenados[meio]) / 2 : ordenados[meio];
-}
-
-function MarcadorLegenda({ classificacao }: { classificacao: Classificacao }) {
-  const cor = COR_PONTO[classificacao];
-  const formato = FORMATO_PONTO[classificacao];
-  return (
-    <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
-      {formato === "triangle" && <polygon points="6,1 11,11 1,11" fill={cor} />}
-      {formato === "diamond" && <polygon points="6,0.5 11.5,6 6,11.5 0.5,6" fill={cor} />}
-      {formato === "circle" && <circle cx="6" cy="6" r="5" fill={cor} />}
-    </svg>
-  );
 }
 
 function TooltipPonto({ active, payload }: { active?: boolean; payload?: { payload: PontoMapaPrioridade }[] }) {
@@ -99,7 +76,7 @@ export default function MapaPrioridadeChart({
       <ul className="mt-3 flex flex-wrap gap-4 text-xs text-slate-600">
         {ORDEM_CLASSIFICACAO.map((classificacao) => (
           <li key={classificacao} className="flex items-center gap-1.5">
-            <MarcadorLegenda classificacao={classificacao} />
+            <MarcadorClassificacao classificacao={classificacao} />
             {classificacao}
           </li>
         ))}
@@ -144,8 +121,8 @@ export default function MapaPrioridadeChart({
               key={classificacao}
               name={classificacao}
               data={pontos.filter((p) => p.classificacao === classificacao)}
-              fill={COR_PONTO[classificacao]}
-              shape={FORMATO_PONTO[classificacao]}
+              fill={COR_CLASSIFICACAO[classificacao]}
+              shape={FORMATO_CLASSIFICACAO[classificacao]}
               stroke="#ffffff"
               strokeWidth={1.5}
             />

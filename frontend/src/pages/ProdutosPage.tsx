@@ -1,7 +1,7 @@
 import { AlertTriangle, ChevronDown, ChevronsUpDown, ChevronUp, Download, Search } from "lucide-react";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 
 import type { Classificacao } from "../api/types";
 import ClassificacaoBadge from "../components/ClassificacaoBadge";
@@ -10,11 +10,12 @@ import { useDefinirExtrasDoTitulo } from "../components/layout/ExtrasDoTitulo";
 import Pagination from "../components/Pagination";
 import SeloSemDesconto from "../components/SeloSemDesconto";
 import { useResultadosUltimaImportacao } from "../hooks/useResultadosUltimaImportacao";
+import { classificacaoPorSlug, ORDEM_CLASSIFICACAO } from "../utils/classificacao";
 import { exportarCsv } from "../utils/exportCsv";
 import { formatarMoeda, formatarNumero } from "../utils/format";
 import { descreverSituacaoDesconto, type SituacaoDesconto } from "../utils/situacaoDesconto";
 
-const OPCOES_CLASSIFICACAO: Classificacao[] = ["Prioridade Alta", "Prioridade Média", "Prioridade Baixa"];
+const OPCOES_CLASSIFICACAO = ORDEM_CLASSIFICACAO;
 const OPCOES_ITENS_POR_PAGINA = [10, 25, 50, 100];
 
 interface LinhaProduto {
@@ -74,8 +75,12 @@ function SelosDoTitulo({
 
 export default function ProdutosPage() {
   const estado = useResultadosUltimaImportacao();
-  const [termoBusca, setTermoBusca] = useState("");
-  const [filtroClassificacao, setFiltroClassificacao] = useState<Classificacao | "todas">("todas");
+  // Filtros iniciais vindos do endereço, ex.: /produtos?classificacao=alta (links do painel).
+  const [parametrosUrl] = useSearchParams();
+  const [termoBusca, setTermoBusca] = useState(() => parametrosUrl.get("busca") ?? "");
+  const [filtroClassificacao, setFiltroClassificacao] = useState<Classificacao | "todas">(
+    () => classificacaoPorSlug(parametrosUrl.get("classificacao")) ?? "todas",
+  );
   const [ordenacao, setOrdenacao] = useState<{ chave: ChaveOrdenacao; direcao: "asc" | "desc" } | null>(
     null,
   );

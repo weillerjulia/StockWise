@@ -1,31 +1,29 @@
-import type { ReactNode } from "react";
-
 import HelpTooltip from "./HelpTooltip";
 
 interface KpiCardProps {
   label: string;
   valor: string;
-  indicador?: ReactNode;
-  corBorda?: string;
-  corValor?: string;
-  alerta?: boolean;
-  tamanhoValor?: "grande" | "pequeno";
+  /** Linha curta que dá referência ao número. Ex: "23% do total". */
+  contexto?: string;
   ajuda?: string;
   alinharAjuda?: "esquerda" | "direita";
+  /** Usados na tela de Upload (resumo da última importação). */
+  tamanhoValor?: "grande" | "pequeno";
+  corBorda?: string;
+  corValor?: string;
 }
 
 export default function KpiCard({
   label,
   valor,
-  indicador,
-  corBorda,
-  corValor,
-  alerta,
-  tamanhoValor = "grande",
+  contexto,
   ajuda,
   alinharAjuda,
+  tamanhoValor = "grande",
+  corBorda,
+  corValor,
 }: KpiCardProps) {
-  const classeValor = tamanhoValor === "pequeno" ? "text-base font-semibold" : "text-3xl font-bold";
+  const classeValor = tamanhoValor === "pequeno" ? "text-base font-semibold" : "text-2xl font-bold";
 
   return (
     <div
@@ -34,14 +32,11 @@ export default function KpiCard({
       }`}
     >
       <div className="flex items-center gap-1.5">
-        <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</p>
-        {alerta && <span className="h-1.5 w-1.5 rounded-full bg-red-500" aria-hidden="true" />}
+        <p className="text-xs font-medium tracking-wide text-slate-500 uppercase">{label}</p>
         {ajuda && <HelpTooltip texto={ajuda} alinhar={alinharAjuda} />}
       </div>
-      <div className="mt-2 flex items-baseline gap-2">
-        <span className={`${classeValor} ${corValor ?? "text-slate-800"}`}>{valor}</span>
-        {indicador}
-      </div>
+      <p className={`mt-2 tabular-nums ${classeValor} ${corValor ?? "text-slate-800"}`}>{valor}</p>
+      {contexto && <p className="mt-1 text-xs text-slate-500">{contexto}</p>}
     </div>
   );
 }

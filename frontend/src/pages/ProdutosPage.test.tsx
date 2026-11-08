@@ -190,4 +190,18 @@ describe("ProdutosPage", () => {
     expect(screen.getByText("Mostrando 11 a 12 de 12 produtos")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Próxima página" })).toBeDisabled();
   });
+
+  it("aplica o filtro de classificação vindo do endereço", async () => {
+    render(
+      <MemoryRouter initialEntries={["/produtos?classificacao=media"]}>
+        <AppLayout>
+          <ProdutosPage />
+        </AppLayout>
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => expect(screen.getByText("Pastilha de freio")).toBeInTheDocument());
+    expect(screen.queryByText("Filtro de óleo")).not.toBeInTheDocument();
+    expect(screen.getByLabelText(/classificação/i)).toHaveValue("Prioridade Média");
+  });
 });
