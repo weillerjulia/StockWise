@@ -160,7 +160,7 @@ A lista completa de funcionalidades está nos [requisitos funcionais](#requisito
 
 ## 4. Vídeo da aplicação
 
-> **[A inserir]** Link do vídeo de demonstração.
+> https://youtu.be/SZ01AKalc34
 
 ---
 
